@@ -1,0 +1,391 @@
+ FOCA+ — Arquitetura de Aplicativo
+
+> Gamified study manager para alunos com transtornos do neurodesenvolvimento
+
+Este documento descreve a estrutura de arquivos e pastas, responsabilidades de cada parte, onde o estado vive e como os serviços se conectam para o FOCA+ (frontend em React Native, backend em Java + Spring Boot, banco PostgreSQL com autenticação).
+
+
+
+ 1. Visão geral da arquitetura
+
+ Frontend: React Native (TypeScript) — UI, navegação, gestão local de estado, armazenamento offline, notificações locais.
+ Backend: Java + Spring Boot — REST API, autenticação/autorização, regras de negócio, agendamento, WebSocket para feedback em tempo real (opcional).
+ Banco de dados: PostgreSQL — persistência de usuários, cursos, disciplinas, sessões de estudo, recompensas, logs.
+ Autenticação: JWT + refresh tokens, integração com provedor OAuth2 (opcional: Google/Apple Signin).
+ Armazenamento cliente: AsyncStorage (dados persistentes), SQLite (opcional para dados tabulares locais), images em Blob/local FS.
+ Push notifications: FCM (Android) / APNs (iOS) através do backend para lembretes e recompensas.
+
+
+
+ 2. Estrutura de pastas sugerida
+
+ Frontend (React Native — TypeScript)
+
+
+focamobile/
+├─ android/
+├─ ios/
+├─ src/
+│  ├─ assets/
+│  │  ├─ images/
+│  │  └─ fonts/
+│  ├─ components/          componentes UI (reutilizáveis)
+│  │  ├─ ui/
+│  │  └─ layout/
+│  ├─ screens/             telas (cada tela mapeada para rota)
+│  │  ├─ Auth/
+│  │  ├─ Dashboard/
+│  │  ├─ CourseAdd/
+│  │  ├─ CourseDetail/
+│  │  ├─ StudySession/
+│  │  └─ Settings/
+│  ├─ navigation/          reactnavigation stacks/tabs
+│  ├─ services/            API clients, auth service, push service
+│  ├─ store/               state global (Redux or Zustand) + slices
+│  ├─ hooks/               custom hooks (useAuth, useTimer)
+│  ├─ utils/               helpers e formatos (date, time)
+│  ├─ types/               TypeScript types/interfaces
+│  ├─ config/              env config, constants
+│  └─ App.tsx
+├─ package.json
+└─ tsconfig.json
+
+
+ O que cada subpasta faz (frontend)
+
+ components/: Botões temáticos, PasswordInput, CourseCard, ProgressRing, FocusTimer, RewardBadge.
+ screens/: Telas compostas por componentes; ex.: CourseAdd contém formulário (nome, nível, tipo de divisão, instituição, data início/fim prevista, período, disciplinas).
+ navigation/: Configura stacks (AuthStack, MainStack), regras de redirecionamento por status de autenticação.
+ services/: api.ts (axios/fetch com interceptors), authService.ts (login, refresh token), syncService.ts (sincronização offline), pushService.ts (registro de token FCM/APNs).
+ store/: Redux Toolkit slices (userSlice, coursesSlice, sessionSlice, rewardsSlice). Lugar principal do estado global compartilhado.
+ hooks/: Encapsulam lógica reutilizável (ex.: useFocusSession gerencia timer local + disparo de eventos visuais/sonoros).
+ utils/: dateUtils.ts, formatDuration.ts, tmCalculator.ts (calcula tempo médio / variação por tipo de atividade).
+
+ Backend (Spring Boot — Java)
+
+
+focabackend/C:\Users\danton\IdeaProjects\Backend-Unifood\src\main\java\Root\shared
+├─ src/main/java/com/foca/
+ FOCA+ — Backend Architecture (Spring Boot)
+
+
+ 1. Overview
+
+The backend is structured following modular architecture, where each domain (e.g., users, courses, studySessions, rewards) has its own internal layers: database, domain, and infra. This approach improves maintainability, scalability, and separation of concerns.
+
+Each module is self-contained, exposing only necessary interfaces to the rest of the application.
+
+
+
+ 2. Folder Structure
+
+
+foca-backend/
+├─ src/main/java/com/foca/
+│  ├─ config/
+│  │  ├─ CorsConfig.java
+│  │  ├─ SecurityConfig.java
+│  │  └─ SpringDocOpenApiConfig.java
+│  │
+│  ├─ modules/
+│  │  ├─ users/
+│  │  │  ├─ database/
+│  │  │  │  ├─ entity/
+│  │  │  │  │  ├─ UserModel.java
+│  │  │  │  │  └─ UserRole.java
+│  │  │  │  └─ repository/
+│  │  │  │     └─ UserRepository.java
+│  │  │  │
+│  │  │  ├─ domain/
+│  │  │  │  ├─ dtos/
+│  │  │  │  │  ├─ mappers/
+│  │  │  │  │  │  └─ UserMapper.java
+│  │  │  │  │  ├─ request/
+│  │  │  │  │  │  ├─ AllUserDto.java
+│  │  │  │  │  │  └─ CreateUserDto.java
+│  │  │  │  │  └─ response/
+│  │  │  │  │     ├─ UserResponseDto.java
+│  │  │  │  │     └─ CreateUserResponseDto.java
+│  │  │  │  └─ services/
+│  │  │  │     ├─ GetAllUsersService.java
+│  │  │  │     ├─ FindUserByNameService.java
+│  │  │  │     ├─ FindUserByEmailService.java
+│  │  │  │     ├─ InsertUserService.java
+│  │  │  │     ├─ UpdateUserService.java
+│  │  │  │     └─ DeleteUserService.java
+│  │  │  │
+│  │  │  └─ infra/
+│  │  │     └─ http/
+│  │  │        └─ controller/
+│  │  │           ├─ CreateUserController.java
+│  │  │           ├─ GetAllUsersController.java
+│  │  │           ├─ FindUserByNameController.java
+│  │  │           ├─ UpdateUserController.java
+│  │  │           └─ DeleteUserController.java
+│  │  │
+│  │  ├─ courses/
+│  │  │  ├─ database/
+│  │  │  │  ├─ entity/CourseModel.java
+│  │  │  │  └─ repository/CourseRepository.java
+│  │  │  ├─ domain/
+│  │  │  │  ├─ dtos/{request,response,mappers}
+│  │  │  │  └─ services/{CreateCourseService,GetCoursesService,UpdateCourseService,DeleteCourseService}
+│  │  │  └─ infra/http/controller/{CreateCourseController,GetCoursesController,UpdateCourseController,DeleteCourseController}
+│  │  │
+│  │  ├─ studySessions/
+│  │  │  ├─ database/{entity,repository}
+│  │  │  ├─ domain/{dtos,services}
+│  │  │  └─ infra/http/controller
+│  │  │
+│  │  └─ rewards/
+│  │     ├─ database/{entity,repository}
+│  │     ├─ domain/{dtos,services}
+│  │     └─ infra/http/controller
+│  │
+│  ├─ exception/
+│  ├─ util/
+│  └─ FocaApplication.java
+│
+├─ src/main/resources/
+│  ├─ application.yml
+│  └─ db/migration/
+│     └─ V1__create_tables.sql
+│
+├─ pom.xml
+└─ Dockerfile
+
+
+
+
+ 3. Layer Responsibilities
+
+ config/
+
+Global configurations: CORS, security, OpenAPI/Swagger documentation.
+
+ modules/
+
+Each module isolates its logic into database, domain, and infra sublayers.
+
+ 1️⃣ database/
+
+Contains JPA entities and repositories for direct interaction with PostgreSQL.
+
+ entity/ → Maps DB tables.
+ repository/ → Spring Data JPA interfaces.
+
+ 2️⃣ domain/
+
+Contains all business logic:
+
+ dtos/ → DTOs for request/response data contracts.
+ mappers/ → Converts between entity ↔ DTO.
+ services/ → Business use cases (pure logic, no HTTP or DB dependencies).
+
+ 3️⃣ infra/
+
+Implements infrastructure concerns:
+
+ http/controller/ → REST endpoints mapped with @RestController.
+
+
+
+ 4. Example (Users Module)
+
+Controller
+
+java
+@RestController
+@RequestMapping("/api/v1/users")
+@RequiredArgsConstructor
+public class CreateUserController {
+    private final InsertUserService insertUserService;
+
+    @PostMapping
+    public ResponseEntity<CreateUserResponseDto> create(@RequestBody CreateUserDto request) {
+        return ResponseEntity.ok(insertUserService.execute(request));
+    }
+}
+
+
+Service
+
+java
+@Service
+@RequiredArgsConstructor
+public class InsertUserService {
+    private final UserRepository repository;
+    private final UserMapper mapper;
+
+    public CreateUserResponseDto execute(CreateUserDto dto) {
+        UserModel entity = mapper.toEntity(dto);
+        repository.save(entity);
+        return mapper.toResponse(entity);
+    }
+}
+
+
+Repository
+
+java
+@Repository
+public interface UserRepository extends JpaRepository<UserModel, UUID> {
+    Optional<UserModel> findByEmail(String email);
+}
+
+
+Entity
+
+java
+@Entity
+@Table(name = "users")
+public class UserModel {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    private String name;
+    private String email;
+    private String passwordHash;
+
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
+}
+
+
+
+
+ 5. Integration Summary
+
+ Controllers → Expose REST endpoints.
+ Services → Contain core logic and validation.
+ Repositories → Access the database.
+ Mappers/DTOs → Ensure clean data flow between layers.
+
+
+
+ 6. Advantages of This Structure
+
+✅ Clear separation of concerns
+✅ Scalable and modular — add new features by module
+✅ Easier testing (unit + integration)
+✅ Aligned with Clean Architecture / Hexagonal principles
+✅ Facilitates OpenAPI generation and documentation per module
+
+
+ O que cada parte faz (backend)
+
+ config/ SecurityConfig: define autenticação (JWT filter), políticas de CORS e rate limiting mínimo.
+ controller/: expõe endpoints REST versionados (ex.: POST /api/v1/auth/login, GET /api/v1/courses, POST /api/v1/studysessions).
+ service/: lógica de negócio — criação de cursos, cálculo de recompensas, regras de variação do tempo médio por tipo (conforme requisitos do FOCA+).
+ repository/: interfaces com JPA/Hibernate para PostgreSQL.
+ dto/: objetos de transferência para evitar expor entidades diretamente.
+ db/migration/: migrações Flyway para manter esquema consistente (versão do banco).
+
+ Banco de dados (PostgreSQL)
+
+Sugestão de tabelas principais:
+
+ users (id, email, password_hash, display_name, roles, created_at, last_seen, settings_json)
+ courses (id, user_id, name, level, division_type, institution, start_date, expected_end_date, period)
+ subjects (id, course_id, name, credit_info)
+ study_sessions (id, user_id, subject_id, course_id, start_ts, end_ts, planned_duration, actual_duration, session_type, focus_score)
+ rewards (id, user_id, type, amount, granted_at)
+ notifications (id, user_id, type, payload, sent_at)
+ audit_logs (id, user_id, action, details, ts)
+
+Autenticação
+
+ refresh_tokens (id, user_id, token_hash, expires_at, revoked)
+
+Use Flyway para migrations e pgcrypto para hashing/mais segurança (quando apropriado).
+
+
+
+ 3. Onde o estado vive
+
+ Frontend
+
+ Estado local (componentlevel): timers curtos, estados de formulário (inputs não salvos), animações. Mantido com useState/useRef.
+ Estado compartilhado (global): informações do usuário autenticado, lista de cursos locais, progresso da sessão em andamento, saldo de recompensas. Armazenado em Redux (RTK) ou Zustand.
+ Persistência local: Redux Persist + AsyncStorage para manter usuário logado e dados essenciais offline. Optionally SQLite para tabelas (se muitas sessões forem salvas localmente antes de sincronizar).
+ Estado derivado: caches (por ex.: reactquery ou RTK Query) para sincronizar dados com o backend, lidar com refetch, retries e revalidação.
+
+ Backend
+
+ Estado persistente: todo dado crítico (usuários, cursos, sessões, recompensas) vive no PostgreSQL.
+ Estado transitório: caches inmemory (ehcache/Caffeine) para contadores não críticos, sessões de socket. Use Redis para: filas de trabalho, ratelimiting, locks distribuídos (se escalar horizontalmente).
+ Tokens e sessões: refresh tokens guardados no DB (hash) e access tokens assinados (stateless JWT).
+
+
+
+ 4. Como os serviços se conectam (fluxo de dados)
+
+1. Login / Autenticação
+
+    Cliente envia POST /api/v1/auth/login (email + password).
+    Backend valida e retorna accessToken (JWT, curta validade) + refreshToken (persistido).
+    Frontend armazena accessToken em memória/secure storage e refreshToken em secure storage (ou Keychain/Keystore).
+
+2. Operações de CRUD (Cursos/Disciplinas)
+
+    Frontend chama endpoints GET /api/v1/courses, POST /api/v1/courses via api.ts com cabeçalho Authorization: Bearer <token>.
+    Interceptor de rede renova token automaticamente usando POST /api/v1/auth/refresh quando 401 de token expirado.
+
+3. Sincronização offline
+
+    Usuário cria/edita cursos offline → alterações gravadas localmente e enfileiradas (syncService).
+    Ao reconectar, syncService faz PATCH/POST nas APIs do backend e resolve conflitos por estratégia (lastwritewins ou merge guiado pelo usuário).
+
+4. Sessões de Estudo & Feedback em Tempo Real
+
+    Início de sessão: POST /api/v1/studysessions/start.
+    Fim de sessão: POST /api/v1/studysessions/complete (envia actual_duration, focus_score).
+    Opcional: WebSocket (/ws/sessions) para atualizações em tempo real (ex.: acompanhar sessão entre dispositivo e painel web).
+
+5. Notificações / Recompensas
+
+    Backend agenda tarefas (Quartz ou Spring @Scheduled) para verificar metas e conceder recompensas; envia push via FCM/APNs.
+
+
+
+ 5. Boas práticas e pontos críticos
+
+ Segurança: não armazene access tokens em AsyncStorage sem proteção; prefira Keychain/Keystore. Use HTTPS, valide CSRF (quando necessário) e proteja endpoints críticos.
+ Acessibilidade: cores contrastantes, feedback sonoro/ tátil opcional, textos simples, fluxo controlável (pause/takeabreak) para usuários com NDD.
+ Performance: paginar entidades grandes, usar compressão, otimizar imagens e assets.
+ Testes: unit tests (Jest/TSDX para RN, JUnit/Mockito para backend), E2E (Detox for RN), integração com banco (Testcontainers para Java).
+ Observability: logs estruturados, métricas (Prometheus + Grafana), Sentry para erros de frontend/back.
+
+
+
+ 6. Deploy & CI/CD (sugestão)
+
+ Frontend: Fastlane para builds, GitHub Actions para pipeline (build > test > publish to App Center / Play/App Store).
+ Backend: Docker + GitHub Actions > Build image > push to registry > deploy to Kubernetes / ECS. Use Flyway migrations no startup.
+ DB: Managed Postgres (AWS RDS / Azure / Supabase) com backups e read replicas se necessário.
+
+
+
+ 7. Exemplo rápido de endpoints (API)
+
+
+POST /api/v1/auth/login
+POST /api/v1/auth/refresh
+GET  /api/v1/users/me
+POST /api/v1/courses
+GET  /api/v1/courses
+POST /api/v1/studysessions/start
+POST /api/v1/studysessions/complete
+GET  /api/v1/rewards
+
+
+
+
+ 8. Próximos passos recomendados
+
+1. Modelar ER minimal e escrever migrações Flyway iniciais.
+2. Criar especificação OpenAPI e gerar DTOs no backend + client types no frontend (openapigenerator / swaggercodegen).
+3. Implementar fluxo de autenticação (registro/login/refresh) antes de construir telas complexas.
+4. Implementar testes unitários e E2E desde o início.
+

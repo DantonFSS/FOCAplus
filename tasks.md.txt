@@ -1,0 +1,1155 @@
+
+ Plano Passo a Passo — Construção do MVP (FOCA+)
+
+ Estrutura baseada em arquitetura modular por entidade.  
+ Backend: Java 17 + Spring Boot 3  
+ Banco de Dados: PostgreSQL em container Docker  
+ Frontend: React Native (build containerizado)  
+ Infraestrutura: Docker Compose
+
+
+
+ 🧩 Fase 0 — Preparação do Repositório e Ferramentas
+
+ Tarefa 0.1 — Criar repositório Git
+ Início: Inicializar repositório focabackend.
+ Fim: git init e primeiro commit.
+ Verificação: Repositório limpo e pronto.
+
+
+
+ Tarefa 0.2 — Criar skeleton do projeto Spring Boot (Maven)
+ Início: Gerar projeto com dependências:
+   springbootstarterweb
+   springbootstarterdatajpa
+   springbootstartervalidation
+   springcloudstarteropenfeign
+   postgresql
+   lombok
+   springdocopenapistarterwebmvcui
+ Fim: Projeto compila com mvn clean package.
+
+
+
+ Tarefa 0.3 — Criar estrutura modular de pacotes
+ Início: Criar pacotes:
+
+
+com.foca.config
+com.foca.modules.users.{database,domain,infra}
+com.foca.modules.courses.{database,domain,infra}
+com.foca.modules.subjects.{database,domain,infra}
+com.foca.modules.studySessions.{database,domain,infra}
+com.foca.modules.rewards.{database,domain,infra}
+com.foca.exception
+com.foca.util
+
+
+ Fim: Classes placeholder adicionadas e build sem erros.
+
+
+
+ ⚙️ Fase 1 — Configuração de Infraestrutura
+
+ Tarefa 1.1 — Criar arquivo application.yml
+ Início: Criar src/main/resources/application.yml com:
+yaml
+spring:
+  datasource:
+    url: ${POSTGRES_URL}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    hibernate:
+      ddlauto: update
+    showsql: true
+  application:
+    name: focabackend
+server:
+  port: 8080
+
+
+ Fim: Arquivo commitado e configurado.
+
+
+
+ Tarefa 1.2 — Criar .env para variáveis de ambiente
+
+ Início: Criar .env com:
+
+  env
+  POSTGRES_USER=postgres
+  POSTGRES_PASSWORD=postgres
+  POSTGRES_DB=db_foca
+  DATABASE_PORT=5432
+  POSTGRES_URL=jdbc:postgresql://db:5432/db_foca
+  
+ Fim: Arquivo .env criado na raiz do projeto.
+
+
+
+ Tarefa 1.3 — Criar dockercompose.yml
+
+ Início: Criar arquivo com conteúdo:
+
+  yaml
+  services:
+    db:
+      container_name: database
+      image: postgres
+      restart: unlessstopped
+      ports:
+         ${DATABASE_PORT}:5432
+      environment:
+        POSTGRES_USER: ${POSTGRES_USER}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+        POSTGRES_DB: ${POSTGRES_DB}
+      env_file:
+         .env
+
+    backend:
+      container_name: bcknd
+      build: ./Bck/Backendfoca
+      ports:
+         "8000:8080"
+      restart: unlessstopped
+      environment:
+        POSTGRES_URL: ${POSTGRES_URL}
+        POSTGRES_USER: ${POSTGRES_USER}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+        WEBAPI_PORT: "8080"
+
+    frontend:
+      container_name: frntd
+      build: ./Frt/Mobilefoca
+      environment:
+        API_URL: "http://bcknd:8080"
+      ports:
+         "9000:80"
+      restart: unlessstopped
+  
+ Fim: Arquivo criado e testado com docker compose up d.
+
+
+
+ 👤 Fase 2 — Módulo de Usuários (Users)
+
+ Tarefa 2.1 — Criar UserModel
+
+ Início: Implementar UserModel.java com atributos:
+
+   UUID id
+   String name
+   String email
+   String passwordHash
+   UserRole role
+ Fim: Classe criada com anotações @Entity e @Table(name="users").
+
+
+
+ Tarefa 2.2 — Criar UserRole enum
+
+ Início: Enum USER, ADMIN.
+ Fim: Enum criado e importado no modelo.
+
+
+
+ Tarefa 2.3 — Criar UserRepository
+
+ Início: Interface JpaRepository<UserModel, UUID.
+ Fim: Método adicional Optional<UserModel findByEmail(String email).
+
+
+
+ Tarefa 2.4 — Criar DTOs
+
+ Início: Criar:
+
+   CreateUserDto com name, email, password.
+   UserResponseDto com id, name, email.
+ Fim: DTOs prontos.
+
+
+
+ Tarefa 2.5 — Criar UserMapper
+
+ Início: Implementar conversões toEntity() e toResponse().
+ Fim: Mapper criado.
+
+
+
+ Tarefa 2.6 — Criar InsertUserService
+
+ Início: Implementar lógica:
+
+   Verifica se email existe
+   Criptografa senha com BCrypt
+   Salva usuário e retorna UserResponseDto
+ Fim: Serviço funcional.
+
+
+
+ Tarefa 2.7 — Criar CreateUserController
+
+ Início: Implementar endpoint POST /api/v1/users.
+ Fim: Endpoint funcional, persiste usuário no banco.
+
+
+
+ 🔐 Fase 3 — Autenticação (JWT)
+
+ Tarefa 3.1 — Criar entidades e repositório de RefreshToken
+
+ Início: Entidade RefreshTokenModel com tokenHash, user, expiresAt, revoked.
+ Fim: Repository implementado.
+
+
+
+ Tarefa 3.2 — Criar AuthService
+
+ Início: Implementar:
+
+   Busca usuário por email
+   Valida senha com BCrypt
+   Gera JWT + Refresh Token
+ Fim: Retorna tokens.
+
+
+
+ Tarefa 3.3 — Criar AuthController
+
+ Início: Endpoints:
+
+   POST /api/v1/auth/login
+   POST /api/v1/auth/refresh
+ Fim: Controlador criado.
+
+
+
+ Tarefa 3.4 — Configurar SecurityConfig
+
+ Início: Proteger rotas /api/v1/ e permitir /api/v1/auth/.
+ Fim: Segurança configurada.
+
+
+
+ 📚 Fase 4 — Módulo de Cursos (Courses)
+
+ Tarefa 4.1 — Criar CourseModel
+
+ Início: Entidade com:
+
+   UUID id
+   UserModel user
+   String name
+   String level
+   String divisionType
+   String institution
+   LocalDate startDate
+   LocalDate expectedEndDate
+   String period
+ Fim: Classe criada.
+
+
+
+ Tarefa 4.2 — Criar CourseRepository
+
+ Início: Interface JpaRepository<CourseModel, UUID.
+ Fim: Método findByUserId(UUID userId).
+
+
+
+ Tarefa 4.3 — Criar DTOs e Mapper
+
+ Início: DTOs CreateCourseDto, CourseResponseDto, e mapper.
+ Fim: Criados.
+
+
+
+ Tarefa 4.4 — Criar CreateCourseService
+
+ Início: Lógica para vincular curso ao usuário autenticado.
+ Fim: Serviço funcional.
+
+
+
+ Tarefa 4.5 — Criar Controladores
+
+ Início: Endpoints:
+
+   POST /api/v1/courses
+   GET /api/v1/courses
+ Fim: Rotas ativas e acessíveis.
+
+
+
+ 📖 Fase 5 — Módulos de Disciplinas e Sessões de Estudo
+
+ Tarefa 5.1 — Criar SubjectModel e SubjectRepository
+
+ Início: Entidade com id, course, name, creditInfo.
+ Fim: Criados.
+
+
+
+ Tarefa 5.2 — Criar CreateSubjectService e Controller
+
+ Início: Endpoint POST /api/v1/courses/{id}/subjects.
+ Fim: Serviço e controlador prontos.
+
+
+
+ Tarefa 5.3 — Criar StudySessionModel e Repository
+
+ Início: Entidade com:
+
+   user, subject, course
+   startTs, endTs
+   plannedDuration, actualDuration
+   sessionType, focusScore
+ Fim: Criado.
+
+
+
+ Tarefa 5.4 — Criar serviços de Sessões
+
+ Início:
+
+   StartStudySessionService — grava início.
+   CompleteStudySessionService — fecha sessão e salva duração.
+ Fim: Implementados.
+
+
+
+ Tarefa 5.5 — Criar Controladores
+
+ Início: Endpoints:
+
+   POST /api/v1/studysessions/start
+   POST /api/v1/studysessions/complete
+ Fim: Endpoints operacionais.
+
+
+
+ 🏅 Fase 6 — Recompensas
+
+ Tarefa 6.1 — Criar RewardModel e Repository
+
+ Início: Entidade com user, type, amount, grantedAt.
+ Fim: Criado.
+
+
+
+ Tarefa 6.2 — Criar GrantRewardService
+
+ Início: Regra simples: se focusScore = X, gera recompensa.
+ Fim: Serviço funcional.
+
+
+
+ Tarefa 6.3 — Criar Scheduler de Recompensas
+
+ Início: @Scheduled para verificar sessões concluídas e conceder recompensas.
+ Fim: Agendador ativo.
+
+
+
+ 🧩 Fase 7 — OpenAPI e Documentação
+
+ Tarefa 7.1 — Configurar SpringDoc
+
+ Início: Criar SpringDocOpenApiConfig.java e organizar tags por módulo.
+ Fim: Acessível em /swaggerui.html.
+
+
+
+ Tarefa 7.2 — Documentar Endpoints
+
+ Início: Garantir que todos os controladores tenham anotações Swagger (@Operation, @Schema).
+ Fim: API documentada.
+
+
+
+ 🪶 Fase 8 — Logs, Observabilidade e Deploy Local
+
+ Tarefa 8.1 — Adicionar Logback configurado
+
+ Início: Criar logbackspring.xml com formato JSON básico.
+ Fim: Logs estruturados visíveis no console.
+
+
+
+ Tarefa 8.2 — Testar Deploy com Docker Compose
+
+ Início: Executar:
+
+  bash
+  docker compose up build
+  
+ Fim: Containers sobem; backend acessível via localhost:8000.
+
+
+
+ ✅ Fase 9 — Entrega e Backlog
+
+ Tarefa 9.1 — Criar arquivo API_USAGE.md
+
+ Início: Incluir exemplos de uso dos endpoints (curl ou Postman).
+ Fim: Documentação criada.
+
+
+
+ Tarefa 9.2 — Criar backlog de evolução
+
+ Início: Listar futuras features:
+
+   Push notifications
+   Métricas de foco
+   WebSocket para tempo real
+   Analytics e gamificação
+ Fim: Backlog pronto.
+
+
+
+ 🧭 Orientação ao Estudante
+
+ Execute uma tarefa por vez e faça commit após o término.
+ Cada tarefa tem início e fim claros e impacto isolado.
+ Após cada entrega, o sistema deve rodar integralmente.
+ Priorize legibilidade, modularização e consistência de código.
+
+
+ Continuação — Plano Passo a Passo (FOCA+ MVP)
+
+ 🚀 Fase 10 — Integração entre Módulos
+
+ Tarefa 10.1 — Vincular Cursos e Usuários
+ Início: Adicionar relacionamento @ManyToOne entre CourseModel e UserModel.
+ Fim: Cada curso pertence a um usuário autenticado.
+ Verificação: Criar curso via /api/v1/courses vincula corretamente o user_id.
+
+
+
+ Tarefa 10.2 — Vincular Disciplinas e Cursos
+ Início: Adicionar relacionamento @ManyToOne em SubjectModel para CourseModel.
+ Fim: Cada disciplina pertence a um curso.
+ Verificação: Endpoint /api/v1/courses/{id}/subjects cria disciplina associada ao curso correto.
+
+
+
+ Tarefa 10.3 — Vincular Sessões de Estudo
+ Início: Adicionar relacionamentos:
+   @ManyToOne para UserModel
+   @ManyToOne para CourseModel
+   @ManyToOne para SubjectModel
+ Fim: Sessão de estudo registrada corretamente com todas as associações.
+
+
+
+ Tarefa 10.4 — Vincular Recompensas ao Usuário
+ Início: Adicionar @ManyToOne entre RewardModel e UserModel.
+ Fim: Cada recompensa pertence a um usuário específico.
+
+
+
+ 🧠 Fase 11 — Lógica de Negócio (Melhorias de Fluxo)
+
+ Tarefa 11.1 — Definir níveis de dificuldade
+ Início: Adicionar campo difficultyLevel em StudySessionModel (enum: EASY, MEDIUM, HARD).
+ Fim: Campo persistido e ajustado na lógica de recompensa.
+
+
+
+ Tarefa 11.2 — Cálculo dinâmico de foco
+ Início: Criar método auxiliar em StudySessionService para calcular focusScore com base em duração e pausa.
+ Fim: Valor salvo automaticamente em complete().
+
+
+
+ Tarefa 11.3 — Regras de Recompensa mais ricas
+ Início: Expandir GrantRewardService:
+   Pontos por foco alto
+   Bônus por dias consecutivos
+ Fim: Regras aplicadas.
+
+
+
+ 📡 Fase 12 — Comunicação com Frontend (API Readiness)
+
+ Tarefa 12.1 — Ajustar CORS
+ Início: Em CorsConfig.java, permitir origem http://localhost:9000.
+ Fim: Frontend pode consumir API localmente sem bloqueio.
+
+
+
+ Tarefa 12.2 — Adicionar resposta padronizada
+ Início: Criar ApiResponse<T genérica com campos:
+   data
+   message
+   timestamp
+ Fim: Todos os controladores retornam esse formato.
+
+
+
+ Tarefa 12.3 — Configurar Feign Client (para integrações futuras)
+ Início: Habilitar @EnableFeignClients e criar exemplo de cliente NotificationClient.
+ Fim: Estrutura pronta para integrações externas.
+
+
+
+ 🛠️ Fase 13 — Configurações de Build e Deploy
+
+ Tarefa 13.1 — Configurar Dockerfile do backend
+ Início: Criar Dockerfile na pasta do backend:
+  dockerfile
+  FROM maven:3.9.6eclipsetemurin17 AS build
+  WORKDIR /app
+  COPY . .
+  RUN mvn clean package DskipTests
+
+  FROM eclipsetemurin:17jdk
+  COPY from=build /app/target/.jar app.jar
+  ENTRYPOINT ["java","jar","/app.jar"]
+
+
+ Fim: Imagem gera .jar e roda em container.
+
+
+
+ Tarefa 13.2 — Ajustar dockercompose.yml final
+
+ Início: Validar comunicação entre serviços e volume persistente para o banco.
+
+  yaml
+  volumes:
+     pgdata:/var/lib/postgresql/data
+  
+ Fim: Compose atualizado e testado.
+
+
+
+ Tarefa 13.3 — Adicionar variáveis de ambiente seguras
+
+ Início: Criar .env.production com valores de produção.
+ Fim: Sistema lê corretamente variáveis em deploy.
+
+
+
+ 🪶 Fase 14 — Documentação Técnica Final
+
+ Tarefa 14.1 — Criar README detalhado
+
+ Início: Adicionar:
+
+   Descrição do projeto
+   Arquitetura modular
+   Instruções de build e execução
+ Fim: Arquivo pronto para repositório principal.
+
+
+
+ Tarefa 14.2 — Criar ARCHITECTURE.md
+
+ Início: Descrever:
+
+   Organização dos módulos
+   Relação entre entidades
+   Fluxo de dados da API
+ Fim: Documento técnico consolidado.
+
+
+
+ Tarefa 14.3 — Criar DEPLOY_GUIDE.md
+
+ Início: Incluir comandos de deploy e rollback via Docker Compose.
+ Fim: Guia completo e funcional.
+
+
+
+ 🧭 Fase 15 — Encerramento e Entrega do MVP
+
+ Tarefa 15.1 — Verificação funcional geral
+
+ Início: Rodar todo o sistema com docker compose up build.
+ Fim: Frontend, backend e banco interagem corretamente.
+
+
+
+ Tarefa 15.2 — Entregar documentação e código
+
+ Início: Enviar código, documentação e logs de execução.
+ Fim: MVP completo e validado.
+
+
+
+ 📘 Orientações Finais
+
+ Cada tarefa representa um incremento funcional isolado.
+ O aluno deve commitar ao final de cada tarefa.
+ O orientador pode testar entre etapas executando docker compose up.
+ O MVP estará completo e validável ao final da Fase 15, pronto para integração com o frontend React Native.
+
+
+ Continuação — Plano Passo a Passo (FOCA+ MVP)
+
+ 🌐 Fase 16 — Integração com Frontend (React Native)
+
+ Tarefa 16.1 — Confirmar rotas e endpoints consumidos pelo app
+ Início: Criar documento api_endpoints.md listando:
+   /api/v1/users → cadastro e consulta
+   /api/v1/auth/login e /api/v1/auth/refresh
+   /api/v1/courses
+   /api/v1/courses/{id}/subjects
+   /api/v1/studysessions/start
+   /api/v1/studysessions/complete
+   /api/v1/rewards
+ Fim: Documento pronto e validado com o frontend.
+
+
+
+ Tarefa 16.2 — Configurar comunicação entre containers
+ Início: Confirmar que o frontend usa API_URL=http://bcknd:8080.
+ Fim: Frontend acessa backend via nome do container (bcknd) no Compose network.
+
+
+
+ Tarefa 16.3 — Validar fluxo de autenticação
+ Início: Executar login pelo app mobile.
+ Fim: Tokens JWT e Refresh Token retornam e persistem corretamente no app.
+
+
+
+ Tarefa 16.4 — Validar persistência e exibição de cursos
+ Início: Criar curso no app e verificar via GET /api/v1/courses.
+ Fim: Cursos aparecem na interface do app.
+
+
+
+ Tarefa 16.5 — Validar sessões de estudo
+ Início: Iniciar e concluir uma sessão pelo app, registrar tempo e foco.
+ Fim: Sessão registrada e foco calculado.
+
+
+
+ Tarefa 16.6 — Validar recompensas
+ Início: Completar sessão com alta pontuação de foco.
+ Fim: Recompensa gerada e listada via /api/v1/rewards.
+
+
+
+ 🧱 Fase 17 — Refino e Modularização Avançada
+
+ Tarefa 17.1 — Criar camada de exceções globais
+ Início: Implementar GlobalExceptionHandler para capturar:
+   EntityNotFoundException
+   IllegalArgumentException
+   MethodArgumentNotValidException
+ Fim: Respostas padronizadas para erros de validação e regra de negócio.
+
+
+
+ Tarefa 17.2 — Criar utilitário genérico de resposta
+ Início: Implementar ApiResponse<T:
+  java
+  public record ApiResponse<T(T data, String message, Instant timestamp) {}
+
+
+ Fim: Todos os controladores usam ApiResponse no retorno.
+
+
+
+ Tarefa 17.3 — Adicionar ResponseEntityFactory
+
+ Início: Classe auxiliar para gerar respostas padronizadas (ok, created, error).
+ Fim: Controladores simplificados.
+
+
+
+ Tarefa 17.4 — Modularizar pacotes de DTOs e Mappers
+
+ Início: Reorganizar estrutura:
+
+  
+  domain/
+   ├─ dtos/
+   │   ├─ request/
+   │   └─ response/
+   └─ mappers/
+  
+ Fim: Padrão aplicado a todos os módulos.
+
+
+
+ Tarefa 17.5 — Adicionar logs por módulo
+
+ Início: Incluir @Slf4j em serviços principais (Users, Auth, Courses).
+ Fim: Logs gerados por módulo com prefixo ([USERS], [AUTH]).
+
+
+
+ ⚡ Fase 18 — Monitoramento e Saúde do Sistema
+
+ Tarefa 18.1 — Habilitar endpoint de saúde
+
+ Início: Adicionar springbootstarteractuator.
+ Fim: Endpoint /actuator/health ativo.
+
+
+
+ Tarefa 18.2 — Adicionar métricas básicas
+
+ Início: Habilitar /actuator/metrics e /actuator/info.
+ Fim: Métricas acessíveis.
+
+
+
+ Tarefa 18.3 — Criar endpoint /api/v1/status
+
+ Início: Endpoint que retorna uptime, versão e ambiente.
+ Fim: Disponível para verificações rápidas.
+
+
+
+ 🧰 Fase 19 — Preparação para Escalabilidade
+
+ Tarefa 19.1 — Configurar variáveis de ambiente dinâmicas
+
+ Início: Adaptar application.yml para ler WEBAPI_PORT, POSTGRES_URL, etc.
+ Fim: Sistema configurável via .env.
+
+
+
+ Tarefa 19.2 — Criar perfil prod no application.yml
+
+ Início: Adicionar perfil com:
+
+   logging.level.root=INFO
+   ddlauto=none
+ Fim: Configuração separada para produção.
+
+
+
+ Tarefa 19.3 — Adicionar cache de consultas simples
+
+ Início: Habilitar @EnableCaching e cache básico em CourseRepository.
+ Fim: Cache funcional.
+
+
+
+ Tarefa 19.4 — Implementar limite de requisições
+
+ Início: Adicionar interceptor para limitar requisições por IP.
+ Fim: Proteção simples de taxa implementada.
+
+
+
+ 🧾 Fase 20 — Empacotamento e Publicação
+
+ Tarefa 20.1 — Gerar build final do backend
+
+ Início: Executar mvn clean package DskipTests.
+ Fim: .jar gerado em /target/app.jar.
+
+
+
+ Tarefa 20.2 — Criar imagem Docker final
+
+ Início: Executar:
+
+  bash
+  docker build t focabackend:latest .
+  
+ Fim: Imagem criada localmente.
+
+
+
+ Tarefa 20.3 — Testar execução com Docker Compose
+
+ Início: Subir todos os serviços:
+
+  bash
+  docker compose up build
+  
+ Fim: Containers iniciam e sistema responde em localhost:8000.
+
+
+
+ Tarefa 20.4 — Documentar deploy
+
+ Início: Adicionar passos de build/deploy ao DEPLOY_GUIDE.md:
+
+   Build do backend
+   Subida de containers
+   Variáveis de ambiente
+ Fim: Guia final completo.
+
+
+
+ 🧩 Fase 21 — Encerramento do Projeto MVP
+
+ Tarefa 21.1 — Revisar endpoints e documentação
+
+ Início: Revisar Swagger UI (/swaggerui.html) e garantir coerência dos nomes.
+ Fim: Documentação completa e consistente.
+
+
+
+ Tarefa 21.2 — Revisar organização dos módulos
+
+ Início: Conferir que cada entidade (users, courses, subjects, studySessions, rewards) tem seus submódulos:
+
+   database
+   domain
+   infra
+ Fim: Estrutura confirmada e padronizada.
+
+
+
+ Tarefa 21.3 — Criar snapshot de entrega
+
+ Início: Criar tag Git v1.0.0MVP.
+ Fim: Versão MVP marcada e entregue.
+
+
+
+ Tarefa 21.4 — Registrar backlog futuro
+
+ Início: Criar documento BACKLOG_NEXT.md com:
+
+   Gamificação visual
+   Ranking global
+   Estatísticas de desempenho
+   Push notifications e calendário integrado
+ Fim: Documento pronto.
+
+
+
+ 🧭 Conclusão Geral
+
+ O MVP resultante é modular, containerizado e autônomo.
+ Cada módulo pode ser mantido ou expandido independentemente.
+ O uso de Docker Compose garante que todo o ambiente (DB, backend e frontend) seja iniciado com um único comando.
+ A arquitetura suporta crescimento natural para microserviços ou integração futura com notificações e dashboards analíticos.
+
+
+
+
+ Continuação — Plano Passo a Passo (FOCA+ MVP)
+
+ 🌱 Fase 22 — Refinamentos Técnicos e Melhoria Contínua
+
+ Tarefa 22.1 — Padronizar nomenclaturas e convenções
+ Início: Revisar todos os pacotes e classes:
+   Pacotes em lowercase
+   Classes e entidades em PascalCase
+   Variáveis em camelCase
+ Fim: Convenções padronizadas para todo o código base.
+
+
+
+ Tarefa 22.2 — Criar arquivo .editorconfig
+ Início: Adicionar configurações globais para formatação:
+  ini
+  [.java]
+  indent_style = space
+  indent_size = 4
+  insert_final_newline = true
+  charset = utf8
+  trim_trailing_whitespace = true
+
+
+ Fim: Projeto mantém formatação consistente entre desenvolvedores.
+
+
+
+ Tarefa 22.3 — Configurar Lombok globalmente
+
+ Início: Garantir uso padronizado de:
+
+   @Data para entidades e DTOs
+   @Builder para mapeamentos
+   @NoArgsConstructor / @AllArgsConstructor para entidades
+ Fim: Lombok aplicado de forma consistente.
+
+
+
+ Tarefa 22.4 — Adicionar logs significativos
+
+ Início: Revisar serviços e adicionar:
+
+  java
+  log.info("[USERS] User {} created successfully", user.getEmail());
+  
+ Fim: Logs claros e consistentes em todas as operações CRUD.
+
+
+
+ Tarefa 22.5 — Implementar DTO genérico de erro
+
+ Início: Criar ErrorResponse com:
+
+  java
+  public record ErrorResponse(String error, String message, Instant timestamp) {}
+  
+ Fim: Todos os erros seguem formato padronizado.
+
+
+
+ 🧭 Fase 23 — Otimização de Performance e Boas Práticas
+
+ Tarefa 23.1 — Habilitar lazy loading nas relações
+
+ Início: Configurar @ManyToOne(fetch = FetchType.LAZY) em entidades com relacionamentos.
+ Fim: Carregamento otimizado e uso de memória reduzido.
+
+
+
+ Tarefa 23.2 — Criar índices em campos críticos
+
+ Início: Adicionar @Index em campos como email, user_id, course_id.
+ Fim: Consultas mais rápidas.
+
+
+
+ Tarefa 23.3 — Ativar cache de segundo nível
+
+ Início: Configurar cache básico no application.yml:
+
+  yaml
+  spring:
+    cache:
+      type: simple
+  
+ Fim: Cache ativado para entidades mais acessadas.
+
+
+
+ Tarefa 23.4 — Revisar entidades para evitar ciclos de referência
+
+ Início: Usar @JsonIgnore onde necessário (por exemplo, em UserModel.courses).
+ Fim: Serialização JSON segura e sem loops.
+
+
+
+ 📘 Fase 24 — Segurança e Políticas de Acesso
+
+ Tarefa 24.1 — Configurar perfis de usuário
+
+ Início: Confirmar que UserRole define USER e ADMIN.
+ Fim: Roles integradas ao SecurityConfig.
+
+
+
+ Tarefa 24.2 — Criar autorização baseada em roles
+
+ Início: Adicionar anotações:
+
+  java
+  @PreAuthorize("hasRole('ADMIN')")
+  
+
+  nos endpoints restritos (ex: listagem global de usuários).
+ Fim: Permissões aplicadas.
+
+
+
+ Tarefa 24.3 — Adicionar expiração e blacklist de JWT
+
+ Início: Implementar expiração curta para access tokens e persistência dos refresh tokens.
+ Fim: Tokens controlados e seguros.
+
+
+
+ Tarefa 24.4 — Armazenar senhas com BCrypt
+
+ Início: Confirmar hashing de senha em InsertUserService:
+
+  java
+  user.setPassword(passwordEncoder.encode(dto.password()));
+  
+ Fim: Senhas salvas de forma segura.
+
+
+
+ Tarefa 24.5 — Adicionar CORS e headers de segurança
+
+ Início: Ajustar CorsConfig para:
+
+   Permitir origens confiáveis
+   Adicionar headers XContentTypeOptions, StrictTransportSecurity
+ Fim: Aplicação protegida contra ataques comuns.
+
+
+
+ 📄 Fase 25 — UX do Painel e Feedback de API
+
+ Tarefa 25.1 — Adicionar mensagens de retorno claras
+
+ Início: Padronizar mensagens no backend:
+
+   “Curso criado com sucesso”
+   “Sessão concluída com sucesso”
+ Fim: Feedback consistente no frontend.
+
+
+
+ Tarefa 25.2 — Implementar endpoint /api/v1/overview
+
+ Início: Endpoint agregando dados:
+
+   Total de cursos, sessões e recompensas
+   Última atividade
+ Fim: Endpoint funcional para dashboard inicial do app.
+
+
+
+ Tarefa 25.3 — Criar DTO OverviewResponse
+
+ Início: Classe agregando:
+
+  java
+  int totalCourses;
+  int totalSubjects;
+  int totalSessions;
+  int totalRewards;
+  
+ Fim: DTO pronto e usado no endpoint /overview.
+
+
+
+ Tarefa 25.4 — Adicionar ranking simples local
+
+ Início: Endpoint /api/v1/rankings com pontuação baseada em número de sessões e foco médio.
+ Fim: Ranking básico funcional.
+
+
+
+ 🌍 Fase 26 — Deploy e Publicação
+
+ Tarefa 26.1 — Configurar domínio e SSL
+
+ Início: Preparar proxy reverso (Nginx ou Traefik) com certificado SSL gratuito (Let's Encrypt).
+ Fim: Backend acessível via HTTPS.
+
+
+
+ Tarefa 26.2 — Publicar imagens no Docker Hub
+
+ Início: Criar repositórios:
+
+   foca/backend
+   foca/frontend
+ Fim: Imagens disponíveis para pull remoto.
+
+
+
+ Tarefa 26.3 — Automatizar deploy
+
+ Início: Criar script deploy.sh:
+
+  bash
+  docker pull foca/backend:latest
+  docker pull foca/frontend:latest
+  docker compose up d
+  
+ Fim: Deploy automatizado.
+
+
+
+ Tarefa 26.4 — Criar backup automático do banco
+
+ Início: Agendar job Docker cron que executa:
+
+  bash
+  pg_dump U postgres db_foca  backup.sql
+  
+ Fim: Backups diários automatizados.
+
+
+
+ 🧾 Fase 27 — Documentação de Produção e Manutenção
+
+ Tarefa 27.1 — Criar OPERATIONS_GUIDE.md
+
+ Início: Explicar:
+
+   Rotinas de backup
+   Restart de containers
+   Logs e troubleshooting
+ Fim: Documento pronto para equipe técnica.
+
+
+
+ Tarefa 27.2 — Criar DEV_GUIDE.md
+
+ Início: Incluir:
+
+   Setup local
+   Padrões de código
+   Convenções de commits e branches
+ Fim: Guia pronto para novos contribuidores.
+
+
+
+ Tarefa 27.3 — Criar ROADMAP.md
+
+ Início: Registrar próximos passos:
+
+   Notificações push
+   Integração com calendário
+   Sistema de desafios diários
+ Fim: Documento de visão futura concluído.
+
+
+
+ 🧩 Fase 28 — Conclusão Final e Entrega
+
+ Tarefa 28.1 — Validar ambiente de produção
+
+ Início: Executar docker compose up d em ambiente remoto.
+ Fim: Backend, frontend e banco em funcionamento.
+
+
+
+ Tarefa 28.2 — Criar snapshot final
+
+ Início: Tag final:
+
+  bash
+  git tag a v1.0.0MVP m "Entrega FOCA+ MVP"
+  git push origin v1.0.0MVP
+  
+ Fim: Versão oficial registrada.
+
+
+
+ Tarefa 28.3 — Entregar documentação e códigofonte final
+
+ Início: Consolidar:
+
+   Código completo
+   Documentação técnica
+   Guias de operação e deploy
+ Fim: Projeto entregue oficialmente.
+
+
+
+ ✅ Resultado Final
+
+Após a conclusão de todas as fases (0 a 28):
+
+ O FOCA+ MVP está operacional e rodando em containers.
+ Estrutura modular pronta para escala, manutenção e extensão.
+ O backend comunicase com o frontend mobile via API REST documentada.
+ A arquitetura garante clareza e isolamento de responsabilidades — ideal para ambiente acadêmico e pesquisa aplicada.
+ O ambiente pode ser iniciado com um único comando:
+
+  bash
+  docker compose up build
+  
+
+e agora devo mostrar ao usuario por meio de que url acessar a aplicação localmente
+
+
+
+

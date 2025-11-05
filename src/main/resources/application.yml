@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: foca
+  
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/db_foca}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+springdoc:
+  swagger-ui:
+    path: /foca.html
+  api-docs:
+    path: /foca
+  packages-to-scan: com.focados.foca.modules
+
+jwt:
+  secret: ${JWT_SECRET:defaultSecretKeyForDevelopmentOnlyChangeInProduction}
+  expiration: ${JWT_EXPIRATION:3600000}
+  refresh:
+    expiration: ${JWT_REFRESH_EXPIRATION:86400000}
+
+server:
+  port: ${WEBAPI_PORT:8080}
+
