@@ -1,5 +1,6 @@
 package com.focados.foca.modules.users.infra.http.controller;
 
+import com.focados.foca.modules.users.domain.dtos.request.CreateUserDto;
 import com.focados.foca.modules.users.domain.dtos.request.LoginDto;
 import com.focados.foca.modules.users.domain.dtos.request.RefreshTokenDto;
 import com.focados.foca.modules.users.domain.dtos.response.AuthResponseDto;
@@ -16,6 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponseDto> register(@RequestBody CreateUserDto createUserDto) {
+        return ResponseEntity.ok(authService.register(createUserDto));
+    }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDto> login(@RequestBody LoginDto loginDto) {

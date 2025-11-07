@@ -4,9 +4,11 @@ import com.focados.foca.modules.users.database.entity.RefreshTokenModel;
 import com.focados.foca.modules.users.database.entity.UserModel;
 import com.focados.foca.modules.users.database.repository.RefreshTokenRepository;
 import com.focados.foca.modules.users.database.repository.UserRepository;
+import com.focados.foca.modules.users.domain.dtos.request.CreateUserDto;
 import com.focados.foca.modules.users.domain.dtos.request.LoginDto;
 import com.focados.foca.modules.users.domain.dtos.request.RefreshTokenDto;
 import com.focados.foca.modules.users.domain.dtos.response.AuthResponseDto;
+import com.focados.foca.modules.users.domain.dtos.mappers.UserMapper;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,40 @@ public class AuthService {
 
     @Value("${jwt.refresh.expiration:86400000}")
     private Long refreshTokenExpiration;
+
+    public AuthResponseDto register(CreateUserDto createUserDto) {
+        // Verifica se email já existe
+        if (userRepository.findByEmail(createUserDto.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email já está em uso");
+        }
+
+        // Verifica se CPF já existe
+        if (createUserDto.getCpf() != null && !createUserDto.getCpf().isBlank()) {
+            if (userRepository.findByCpf(createUserDto.getCpf()).isPresent()) {
+                throw new IllegalArgumentException("CPF já está em uso");
+            }
+        }
+
+        // Mapeia DTO para entidade
+        UserModel user = UserMapper.mappingToUserEntity(createUserDto);
+
+        // Criptografa senha com BCrypt
+        user.setPasswordHash(passwordEncoder.encode(createUserDto.getPassword()));
+
+        // Salva usuário
+        UserModel savedUser = userRepository.save(user);
+
+        // Gera JWT
+        String accessToken = generateAccessToken(savedUser);
+
+        // Gera Refresh Token
+        String refreshToken = generateRefreshToken(savedUser);
+
+        // Salva Refresh Token no banco
+        saveRefreshToken(savedUser, refreshToken);
+
+        return new AuthResponseDto(accessToken, refreshToken);
+    }
 
     public AuthResponseDto login(LoginDto loginDto) {
         // Busca usuário por email
