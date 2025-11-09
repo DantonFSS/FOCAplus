@@ -26,10 +26,6 @@ public class CourseModel {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private UserModel user;
-
     @Column(nullable = false)
     private String name;
 
@@ -39,6 +35,9 @@ public class CourseModel {
     @Column(name = "division_type", nullable = false)
     private String divisionType;
 
+    @Column(name = "divisions_count", nullable = false)
+    private int divisionsCount;
+
     @Column(name = "institution_name")
     private String institutionName;
 
@@ -46,28 +45,33 @@ public class CourseModel {
     private LocalDate startDate;
 
     @Column(name = "expected_end_date")
-    private LocalDate expectedEndDate;
-
-    private String period;
-
-    @Column(name = "divisions_count", nullable = false)
-    private int divisionsCount;
+    private LocalDate endDate;
 
     private String address;
 
     @Column(name = "is_online")
-    private boolean isOnline = false;
+    private boolean online = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by", nullable = false)
+    private UserModel createdBy;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private ZonedDateTime createdAt;
 
-    @ElementCollection
+    @Column(name = "status")
+    private String status = "not_started";
+
+    @ElementCollection(fetch = FetchType.EAGER)
     @Column(name = "phones")
     private List<String> phones;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @Column(name = "emails")
     private List<String> emails;
+
+    @OneToMany(mappedBy = "courseTemplate", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserCourseModel> userCourses;
 }
 

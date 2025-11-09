@@ -12,6 +12,7 @@ import java.util.UUID;
  */
 @Repository
 public interface CourseRepository extends JpaRepository<CourseModel, UUID> {
-    List<CourseModel> findByUserId(UUID userId);
+    List<CourseModel> findByCreatedById(UUID userId);
+
 }
 

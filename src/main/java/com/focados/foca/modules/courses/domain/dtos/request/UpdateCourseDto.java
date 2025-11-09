@@ -7,10 +7,14 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 @Data
-public class CreateCourseDto {
+public class UpdateCourseDto {
+    @NotNull
+    private UUID id;
+
     @NotNull
     @NotBlank(message = "Name must not be empty or null")
     private String name;
@@ -27,15 +31,11 @@ public class CreateCourseDto {
     private Integer divisionsCount;
 
     private String institutionName;
-
     private LocalDate startDate;
-
     private LocalDate endDate;
-
     private String address;
-    private boolean online = false;
+    private Boolean online = false;
     private String status;
     private List<String> phones;
     private List<String> emails;
 }
-

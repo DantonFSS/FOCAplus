@@ -21,6 +21,8 @@ public class UserModel {
 
     private String cpf;
     private String name;
+
+    @Column(unique = true, nullable = false)
     private String email;
     private String phone;
     private String passwordHash;

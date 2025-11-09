@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -111,7 +112,12 @@ public class AuthService {
         return UUID.randomUUID().toString();
     }
 
+    @Transactional
     private void saveRefreshToken(UserModel user, String refreshToken) {
+
+        // Remove TODOS os tokens do usuário antes de criar novo
+        refreshTokenRepository.deleteByUserId(user.getId());
+
         // Hash do refresh token antes de salvar
         String tokenHash = passwordEncoder.encode(refreshToken);
 

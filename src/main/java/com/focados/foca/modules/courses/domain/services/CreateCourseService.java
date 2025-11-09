@@ -1,4 +1,4 @@
-package com.focados.foca.modules.courses.domain.services;
+/*package com.focados.foca.modules.courses.domain.services;
 
 import com.focados.foca.modules.courses.database.entity.CourseModel;
 import com.focados.foca.modules.courses.database.repository.CourseRepository;
@@ -25,7 +25,7 @@ public class CreateCourseService {
 
         // Mapeia DTO para entidade
         CourseModel course = CourseMapper.toEntity(dto);
-        course.setUser(user);
+        course.setCreatedBy(user);
 
         // Salva curso
         CourseModel savedCourse = courseRepository.save(course);
@@ -34,4 +34,4 @@ public class CreateCourseService {
         return CourseMapper.toResponse(savedCourse);
     }
 }
-
+*/

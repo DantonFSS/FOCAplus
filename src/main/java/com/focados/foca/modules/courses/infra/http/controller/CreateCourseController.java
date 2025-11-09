@@ -1,4 +1,4 @@
-package com.focados.foca.modules.courses.infra.http.controller;
+/*package com.focados.foca.modules.courses.infra.http.controller;
 
 import com.focados.foca.modules.courses.domain.dtos.request.CreateCourseDto;
 import com.focados.foca.modules.courses.domain.dtos.response.CourseResponseDto;
@@ -23,3 +23,4 @@ public class CreateCourseController {
     }
 }
 
+*/

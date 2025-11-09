@@ -1,6 +1,7 @@
 package com.focados.foca.modules.courses.domain.dtos.mappers;
 
 import com.focados.foca.modules.courses.database.entity.CourseModel;
+import com.focados.foca.modules.courses.database.entity.UserCourseModel;
 import com.focados.foca.modules.courses.domain.dtos.request.CreateCourseDto;
 import com.focados.foca.modules.courses.domain.dtos.response.CourseResponseDto;
 import org.springframework.stereotype.Component;
@@ -16,11 +17,16 @@ public class CourseMapper {
         course.setName(dto.getName());
         course.setLevel(dto.getLevel());
         course.setDivisionType(dto.getDivisionType());
+        course.setDivisionsCount(dto.getDivisionsCount());
         course.setInstitutionName(dto.getInstitutionName());
         course.setStartDate(dto.getStartDate());
-        course.setExpectedEndDate(dto.getExpectedEndDate());
-        course.setPeriod(dto.getPeriod());
-        course.setDivisionsCount(0);
+        course.setEndDate(dto.getEndDate());
+        course.setAddress(dto.getAddress());
+        course.setOnline(dto.isOnline());
+        course.setStatus(dto.getStatus());
+        course.setPhones(dto.getPhones());
+        course.setEmails(dto.getEmails());
+
         return course;
     }
 
@@ -30,17 +36,24 @@ public class CourseMapper {
         response.setName(course.getName());
         response.setLevel(course.getLevel());
         response.setDivisionType(course.getDivisionType());
+        response.setDivisionsCount(course.getDivisionsCount());
         response.setInstitutionName(course.getInstitutionName());
         response.setStartDate(course.getStartDate());
-        response.setExpectedEndDate(course.getExpectedEndDate());
-        response.setPeriod(course.getPeriod());
+        response.setEndDate(course.getEndDate());
+        response.setAddress(course.getAddress());
+        response.setOnline(course.isOnline());
+        response.setStatus(course.getStatus());
+        response.setPhones(course.getPhones());
+        response.setEmails(course.getEmails());
+        response.setCreatedBy(course.getCreatedBy() != null ? course.getCreatedBy().getId() : null);
         return response;
     }
 
-    public static List<CourseResponseDto> toResponseList(List<CourseModel> courses) {
-        return courses.stream()
+
+    /*public static List<CourseResponseDto> toResponseList(List<UserCourseModel> userCourses) {
+        return userCourses.stream()
                 .map(CourseMapper::toResponse)
                 .collect(Collectors.toList());
-    }
+    }*/
 }
 
