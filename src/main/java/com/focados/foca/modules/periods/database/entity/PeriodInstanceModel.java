@@ -1,27 +1,30 @@
 package com.focados.foca.modules.periods.database.entity;
 
-import com.focados.foca.modules.courses.database.entity.CourseModel;
+
+import com.focados.foca.modules.courses.database.entity.UserCourseModel;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-
 import java.time.LocalDate;
-import java.time.ZonedDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "period_templates")
+@Table(name = "period_instances")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PeriodTemplateModel {
+public class PeriodInstanceModel {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_template_id", nullable = false)
-    private CourseModel courseTemplate;
+    @JoinColumn(name = "user_course_id", nullable = false)
+    private UserCourseModel userCourse;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "period_template_id")
+    private PeriodTemplateModel periodTemplate;
 
     @Column(name = "name")
     private String name;
@@ -34,5 +37,4 @@ public class PeriodTemplateModel {
 
     @Column(name = "planned_end")
     private LocalDate plannedEnd;
-
 }

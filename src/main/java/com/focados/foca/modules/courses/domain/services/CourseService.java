@@ -6,6 +6,7 @@ import com.focados.foca.modules.courses.domain.dtos.mappers.CourseMapper;
 import com.focados.foca.modules.courses.domain.dtos.request.CreateCourseDto;
 import com.focados.foca.modules.courses.domain.dtos.request.UpdateCourseDto;
 import com.focados.foca.modules.courses.domain.dtos.response.CourseResponseDto;
+import com.focados.foca.modules.periods.domain.services.PeriodTemplateService;
 import com.focados.foca.modules.users.database.entity.UserModel;
 import com.focados.foca.modules.users.database.repository.UserRepository;
 import com.focados.foca.modules.users.domain.services.AuthUtil;
@@ -22,6 +23,7 @@ public class CourseService {
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
     private final UserCourseService userCourseService;
+    private final PeriodTemplateService periodTemplateService;
 
     public CourseResponseDto create(CreateCourseDto dto) {
         UUID userId = AuthUtil.getAuthenticatedUserId();
@@ -32,6 +34,8 @@ public class CourseService {
         course.setCreatedBy(user);
 
         courseRepository.save(course);
+
+        periodTemplateService.createPeriodsForCourse(course);
 
         String shareCode = userCourseService.generateShareCode(course.getName());
         userCourseService.createUserCourseLink(user, course, shareCode);
