@@ -1,5 +1,9 @@
 package com.focados.foca.modules.courses.domain.dtos.response;
 
+import com.focados.foca.modules.courses.database.entity.enums.CourseLevel;
+import com.focados.foca.modules.courses.database.entity.enums.CourseStatus;
+import com.focados.foca.modules.courses.database.entity.enums.DivisionType;
+import com.focados.foca.modules.courses.database.entity.enums.UserCourseRole;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -11,7 +15,7 @@ import java.util.UUID;
 public class UserCourseResponseDto {
     // Campos do UserCourseModel
     private UUID userCourseId;
-    private String role;
+    private UserCourseRole role;
     private String shareCode;
     private boolean accepted;
     private ZonedDateTime joinedAt;
@@ -21,16 +25,17 @@ public class UserCourseResponseDto {
     // Campos do CourseModel
     private UUID templateId;
     private String name;
-    private String level;
-    private String divisionType;
+    private CourseLevel level;
+    private DivisionType divisionType;
     private int divisionsCount;
     private String institutionName;
     private LocalDate startDate;
     private LocalDate endDate;
     private String address;
     private boolean online;
-    private String status;
+    private CourseStatus status;
     private List<String> phones;
     private List<String> emails;
     private UUID createdBy;
+
 }

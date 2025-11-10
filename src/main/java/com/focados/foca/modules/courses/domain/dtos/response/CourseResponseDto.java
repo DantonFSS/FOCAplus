@@ -1,5 +1,8 @@
 package com.focados.foca.modules.courses.domain.dtos.response;
 
+import com.focados.foca.modules.courses.database.entity.enums.CourseLevel;
+import com.focados.foca.modules.courses.database.entity.enums.CourseStatus;
+import com.focados.foca.modules.courses.database.entity.enums.DivisionType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,15 +17,15 @@ import java.util.UUID;
 public class CourseResponseDto {
     private UUID id;
     private String name;
-    private String level;
-    private String divisionType;
+    private CourseLevel level;
+    private DivisionType divisionType;
     private int divisionsCount;
     private String institutionName;
     private LocalDate startDate;
     private LocalDate endDate;
     private String address;
     private boolean online;
-    private String status;
+    private CourseStatus status;
     private List<String> phones;
     private List<String> emails;
     private UUID createdBy;

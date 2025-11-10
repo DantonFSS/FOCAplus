@@ -1,5 +1,8 @@
 package com.focados.foca.modules.courses.domain.dtos.request;
 
+import com.focados.foca.modules.courses.database.entity.enums.CourseLevel;
+import com.focados.foca.modules.courses.database.entity.enums.CourseStatus;
+import com.focados.foca.modules.courses.database.entity.enums.DivisionType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -17,14 +20,14 @@ public class CreateCourseDto {
 
     @NotNull
     @NotBlank(message = "Level must not be empty or null")
-    private String level;
+    private CourseLevel level;
 
     @NotNull
     @NotBlank(message = "Division type must not be empty or null")
-    private String divisionType;
+    private DivisionType divisionType = DivisionType.PERIOD;
 
     @NotNull(message = "DivisionsCount is required")
-    private Integer divisionsCount;
+    private Integer divisionsCount = 1;
 
     private String institutionName;
 
@@ -34,7 +37,7 @@ public class CreateCourseDto {
 
     private String address;
     private boolean online = false;
-    private String status;
+    private CourseStatus status = CourseStatus.NOT_STARTED;
     private List<String> phones;
     private List<String> emails;
 }

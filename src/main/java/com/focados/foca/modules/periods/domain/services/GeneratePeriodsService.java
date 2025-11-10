@@ -1,6 +1,7 @@
 package com.focados.foca.modules.periods.domain.services;
 
 import com.focados.foca.modules.courses.database.entity.CourseModel;
+import com.focados.foca.modules.courses.database.entity.enums.DivisionType;
 import com.focados.foca.modules.periods.database.entity.PeriodTemplateModel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,9 +13,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GeneratePeriodsService {
 
-    public List<PeriodTemplateModel> generatePeriods(CourseModel course) {
+   /* public List<PeriodTemplateModel> generatePeriods(CourseModel course) {
         int count = course.getDivisionsCount();
-        String type = course.getDivisionType();
+        DivisionType type = course.getDivisionType();
 
         List<PeriodTemplateModel> periods = new ArrayList<>();
 
@@ -28,5 +29,5 @@ public class GeneratePeriodsService {
         }
 
         return periods;
-    }
+    }*/
 }

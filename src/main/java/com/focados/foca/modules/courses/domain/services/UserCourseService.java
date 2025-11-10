@@ -2,6 +2,7 @@ package com.focados.foca.modules.courses.domain.services;
 
 import com.focados.foca.modules.courses.database.entity.CourseModel;
 import com.focados.foca.modules.courses.database.entity.UserCourseModel;
+import com.focados.foca.modules.courses.database.entity.enums.UserCourseRole;
 import com.focados.foca.modules.courses.database.repository.UserCourseRepository;
 import com.focados.foca.modules.courses.domain.dtos.mappers.UserCourseMapper;
 import com.focados.foca.modules.courses.domain.dtos.request.UpdateCourseDto;
@@ -29,7 +30,7 @@ public class UserCourseService {
         UserCourseModel userCourse = new UserCourseModel();
         userCourse.setUser(user);
         userCourse.setCourseTemplate(course);
-        userCourse.setRole(isOwner ? "owner" : "member");
+        userCourse.setRole(isOwner ? UserCourseRole.OWNER : UserCourseRole.MEMBER);
         userCourse.setAccepted(true);
         userCourse.setCustomStart(course.getStartDate());
         userCourse.setCustomEnd(course.getEndDate());

@@ -1,5 +1,6 @@
 package com.focados.foca.modules.courses.database.entity;
 
+import com.focados.foca.modules.courses.database.entity.enums.UserCourseRole;
 import com.focados.foca.modules.users.database.entity.UserModel;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -30,8 +31,9 @@ public class UserCourseModel {
     @JoinColumn(name = "course_template_id", nullable = false)
     private CourseModel courseTemplate;
 
-    @Column(name = "role")
-    private String role = "owner";
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private UserCourseRole role = UserCourseRole.OWNER;
 
     @Column(name = "share_code, unique = true")
     private String shareCode;

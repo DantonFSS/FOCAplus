@@ -1,5 +1,8 @@
 package com.focados.foca.modules.courses.database.entity;
 
+import com.focados.foca.modules.courses.database.entity.enums.CourseLevel;
+import com.focados.foca.modules.courses.database.entity.enums.CourseStatus;
+import com.focados.foca.modules.courses.database.entity.enums.DivisionType;
 import com.focados.foca.modules.users.database.entity.UserModel;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -29,14 +32,16 @@ public class CourseModel {
     @Column(nullable = false)
     private String name;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String level;
+    private CourseLevel level;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "division_type", nullable = false)
-    private String divisionType;
+    private DivisionType divisionType = DivisionType.PERIOD;
 
     @Column(name = "divisions_count", nullable = false)
-    private int divisionsCount;
+    private int divisionsCount = 1;
 
     @Column(name = "institution_name")
     private String institutionName;
@@ -60,8 +65,9 @@ public class CourseModel {
     @Column(name = "created_at", updatable = false)
     private ZonedDateTime createdAt;
 
-    @Column(name = "status")
-    private String status = "not_started";
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private CourseStatus status = CourseStatus.NOT_STARTED;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @Column(name = "phones")

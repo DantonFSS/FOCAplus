@@ -1,5 +1,8 @@
 package com.focados.foca.modules.courses.domain.dtos.request;
 
+import com.focados.foca.modules.courses.database.entity.enums.CourseLevel;
+import com.focados.foca.modules.courses.database.entity.enums.CourseStatus;
+import com.focados.foca.modules.courses.database.entity.enums.DivisionType;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -16,15 +19,17 @@ public class UpdateUserCourseDto {
 
     // Campos do template que podem ser editados
     private String name;
-    private String level;
-    private String divisionType;
+    private CourseLevel level;
+    private DivisionType divisionType;
     private Integer divisionsCount;
     private String institutionName;
     private LocalDate startDate;
     private LocalDate endDate;
     private String address;
     private Boolean online;
-    private String status;
+    private CourseStatus status;
     private List<String> phones;
     private List<String> emails;
+
+
 }
