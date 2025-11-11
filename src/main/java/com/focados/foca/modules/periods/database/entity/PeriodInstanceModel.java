@@ -22,8 +22,8 @@ public class PeriodInstanceModel {
     @JoinColumn(name = "user_course_id", nullable = false)
     private UserCourseModel userCourse;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "period_template_id")
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "period_template_id", nullable = true)
     private PeriodTemplateModel periodTemplate;
 
     @Column(name = "name")

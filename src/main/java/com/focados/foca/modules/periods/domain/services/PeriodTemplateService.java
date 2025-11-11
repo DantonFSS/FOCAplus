@@ -12,6 +12,7 @@ import com.focados.foca.modules.periods.domain.dtos.response.PeriodTemplateRespo
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,13 +35,30 @@ public class PeriodTemplateService {
     }
 
     public void createPeriodsForCourse(CourseModel course) {
-        String prefix = DIVISION_TYPE_PT.getOrDefault(course.getDivisionType(), "PERÍODO");
-        for (int i = 1; i <= course.getDivisionsCount(); i++) {
+        LocalDate courseStart = course.getStartDate();
+        LocalDate courseEnd = course.getEndDate();
+        int totalPeriods = course.getDivisionsCount();
+        DivisionType type = course.getDivisionType();
+
+        if (courseStart == null || courseEnd == null || !courseStart.isBefore(courseEnd)) {
+            throw new IllegalArgumentException("Data de início deve ser anterior à data de término do curso.");
+        }
+
+        String prefix = DIVISION_TYPE_PT.getOrDefault(type, "PERÍODO");
+        LocalDate lastEnd = courseStart.minusDays(1);
+
+        for (int periodIndex = 1; periodIndex <= totalPeriods; periodIndex++) {
+            NextPeriodData dates = getNextPeriodDates(type, lastEnd, courseEnd, periodIndex);
+
             PeriodTemplateModel period = new PeriodTemplateModel();
             period.setCourseTemplate(course);
-            period.setName(prefix + " " + i);
-            period.setPosition(i);
+            period.setName(prefix + " " + periodIndex);
+            period.setPosition(periodIndex);
+            period.setPlannedStart(dates.start);
+            period.setPlannedEnd(dates.end);
+
             periodTemplateRepository.save(period);
+            lastEnd = dates.end;
         }
     }
 
@@ -50,24 +68,110 @@ public class PeriodTemplateService {
 
         List<PeriodTemplateModel> periods = periodTemplateRepository
                 .findByCourseTemplateIdOrderByPositionAsc(dto.getCourseTemplateId());
-        int nextPosition = periods.size() + 1;
 
-        String prefix = DIVISION_TYPE_PT.getOrDefault(course.getDivisionType(), "PERÍODO");
-        String name = prefix + " " + nextPosition;
+        PeriodTemplateModel newPeriod = buildNextPeriod(course, periods);
 
-        PeriodTemplateModel newPeriod = new PeriodTemplateModel();
-        newPeriod.setCourseTemplate(course);
-        newPeriod.setName(name);
-        newPeriod.setPosition(nextPosition);
-        newPeriod.setPlannedStart(dto.getPlannedStart());
-        newPeriod.setPlannedEnd(dto.getPlannedEnd());
+        if (newPeriod == null) {
+            throw new IllegalArgumentException("Semestre excede a data final do curso.");
+        }
 
         periodTemplateRepository.save(newPeriod);
         return PeriodTemplateMapper.toResponse(newPeriod);
     }
 
+    public PeriodTemplateModel buildNextPeriod(CourseModel course, List<PeriodTemplateModel> existingPeriods) {
+        String prefix = DIVISION_TYPE_PT.getOrDefault(course.getDivisionType(), "PERÍODO");
+        int nextPosition = existingPeriods.size() + 1;
+        LocalDate courseEnd = course.getEndDate();
+
+        LocalDate lastEnd = existingPeriods.isEmpty()
+                ? course.getStartDate().minusDays(1)
+                : existingPeriods.get(existingPeriods.size() - 1).getPlannedEnd();
+
+        NextPeriodData dates = getNextPeriodDates(course.getDivisionType(), lastEnd, courseEnd, nextPosition);
+
+        if (dates.start.isAfter(courseEnd)) {
+            System.out.println("[buildNextPeriod] Início calculado após término do curso. Não criar mais períodos.");
+            return null;
+        }
+
+        PeriodTemplateModel period = new PeriodTemplateModel();
+        period.setCourseTemplate(course);
+        period.setName(prefix + " " + nextPosition);
+        period.setPosition(nextPosition);
+        period.setPlannedStart(dates.start);
+        period.setPlannedEnd(dates.end);
+
+        System.out.println("[buildNextPeriod] NOVO PERÍODO: position=" + period.getPosition()
+                + " start=" + period.getPlannedStart()
+                + " end=" + period.getPlannedEnd()
+                + " name=" + period.getName());
+
+        return period;
+    }
+
+    private NextPeriodData getNextPeriodDates(
+            DivisionType type,
+            LocalDate previousPeriodEnd,
+            LocalDate courseEnd,
+            int nextPosition
+    ) {
+        LocalDate start, end;
+        int year;
+
+        if (type == DivisionType.SEMESTER) {
+            // SEMESTER: Março–Julho, Julho–Dezembro
+            if (previousPeriodEnd.getMonthValue() == 12) {
+                year = previousPeriodEnd.getYear() + 1;
+                start = LocalDate.of(year, 3, 1);
+                end = LocalDate.of(year, 7, 15);
+            } else if (previousPeriodEnd.getMonthValue() >= 7) {
+                year = previousPeriodEnd.getYear();
+                start = LocalDate.of(year, 7, 16);
+                end = LocalDate.of(year, 12, 20);
+            } else {
+                year = previousPeriodEnd.getYear();
+                start = LocalDate.of(year, 3, 1);
+                end = LocalDate.of(year, 7, 15);
+            }
+        } else if (type == DivisionType.QUARTER) {
+            // QUARTER: Trimestres começando após periodEnd
+            start = previousPeriodEnd.plusDays(1);
+            end = start.plusMonths(3).minusDays(1);
+        } else if (type == DivisionType.YEAR) {
+            start = previousPeriodEnd.plusDays(1);
+            end = start.plusYears(1).minusDays(1);
+        } else {
+            // Default: PERIOD/MODULE = 6 meses
+            start = previousPeriodEnd.plusDays(1);
+            end = start.plusMonths(6).minusDays(1);
+        }
+
+        if (end.isAfter(courseEnd)) end = courseEnd;
+        if (start.isAfter(end)) start = end;
+
+        return new NextPeriodData(start, end);
+    }
+
+    // Helper class para retorno dos dados
+    private static class NextPeriodData {
+        final LocalDate start;
+        final LocalDate end;
+        NextPeriodData(LocalDate start, LocalDate end) {
+            this.start = start;
+            this.end = end;
+        }
+    }
+
     public List<PeriodTemplateResponseDto> getAll() {
         return periodTemplateRepository.findAll()
+                .stream()
+                .map(PeriodTemplateMapper::toResponse)
+                .toList();
+    }
+
+    public List<PeriodTemplateResponseDto> getAllByCourseId(UUID courseTemplateId) {
+        return periodTemplateRepository.findByCourseTemplateIdOrderByPositionAsc(courseTemplateId)
                 .stream()
                 .map(PeriodTemplateMapper::toResponse)
                 .toList();

@@ -8,6 +8,7 @@ import com.focados.foca.modules.courses.domain.dtos.mappers.UserCourseMapper;
 import com.focados.foca.modules.courses.domain.dtos.request.UpdateCourseDto;
 import com.focados.foca.modules.courses.domain.dtos.request.UpdateUserCourseDto;
 import com.focados.foca.modules.courses.domain.dtos.response.UserCourseResponseDto;
+import com.focados.foca.modules.periods.domain.services.PeriodInstanceService;
 import com.focados.foca.modules.users.database.entity.UserModel;
 import com.focados.foca.modules.users.database.repository.UserRepository;
 import com.focados.foca.modules.users.domain.services.AuthUtil;
@@ -24,6 +25,7 @@ public class UserCourseService {
     private final UserCourseRepository userCourseRepository;
     private final CourseTemplateEditorService courseTemplateEditorService;
     private final UserRepository userRepository;
+    private final PeriodInstanceService periodInstanceService;
 
     public UserCourseModel createUserCourseLink(UserModel user, CourseModel course, String shareCode) {
         boolean isOwner = user.getId().equals(course.getCreatedBy().getId());
@@ -106,6 +108,7 @@ public class UserCourseService {
                 userId, ownerCourse.getCourseTemplate().getId());
         if (alreadyMember) throw new IllegalArgumentException("Você já participa deste curso.");
         UserCourseModel newUserCourse = createUserCourseLink(user, ownerCourse.getCourseTemplate(), shareCode);
+        periodInstanceService.createPeriodInstancesForUserCourse(newUserCourse);
         return UserCourseMapper.toResponse(newUserCourse);
     }
 

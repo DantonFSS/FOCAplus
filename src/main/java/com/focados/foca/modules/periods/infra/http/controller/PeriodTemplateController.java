@@ -28,6 +28,11 @@ public class PeriodTemplateController {
         return ResponseEntity.ok(service.getAll());
     }
 
+    @GetMapping("/by-course/{courseTemplateId}")
+    public ResponseEntity<List<PeriodTemplateResponseDto>> getAllByCourseId(@PathVariable UUID courseTemplateId) {
+        return ResponseEntity.ok(service.getAllByCourseId(courseTemplateId));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<PeriodTemplateResponseDto> getOne(@PathVariable UUID id) {
         return ResponseEntity.ok(service.getById(id));
