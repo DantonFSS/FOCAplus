@@ -1,5 +1,6 @@
 package com.focados.foca.modules.materias.infra.http.controller;
 
+import com.focados.foca.modules.materias.domain.dtos.request.BatchCreateDisciplineTemplateDto;
 import com.focados.foca.modules.materias.domain.dtos.request.CreateDisciplineTemplateDto;
 import com.focados.foca.modules.materias.domain.dtos.request.UpdateDisciplineTemplateDto;
 import com.focados.foca.modules.materias.domain.dtos.response.DisciplineTemplateResponseDto;
@@ -21,6 +22,13 @@ public class DisciplineTemplateController {
     @PostMapping
     public ResponseEntity<DisciplineTemplateResponseDto> create(@RequestBody CreateDisciplineTemplateDto dto) {
         return ResponseEntity.ok(service.create(dto));
+    }
+
+    @PostMapping("/batch")
+    public ResponseEntity<List<DisciplineTemplateResponseDto>> batchCreate(
+            @RequestBody BatchCreateDisciplineTemplateDto dto
+    ) {
+        return ResponseEntity.ok(service.batchCreate(dto));
     }
 
     @GetMapping

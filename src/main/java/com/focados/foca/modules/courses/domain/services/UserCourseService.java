@@ -3,6 +3,7 @@ package com.focados.foca.modules.courses.domain.services;
 import com.focados.foca.modules.courses.database.entity.CourseModel;
 import com.focados.foca.modules.courses.database.entity.UserCourseModel;
 import com.focados.foca.modules.courses.database.entity.enums.UserCourseRole;
+import com.focados.foca.modules.courses.database.repository.CourseRepository;
 import com.focados.foca.modules.courses.database.repository.UserCourseRepository;
 import com.focados.foca.modules.courses.domain.dtos.mappers.UserCourseMapper;
 import com.focados.foca.modules.courses.domain.dtos.request.UpdateCourseDto;
@@ -26,8 +27,9 @@ public class UserCourseService {
     private final CourseTemplateEditorService courseTemplateEditorService;
     private final UserRepository userRepository;
     private final PeriodInstanceService periodInstanceService;
+    private final CourseRepository courseRepository;
 
-    public UserCourseModel createUserCourseLink(UserModel user, CourseModel course, String shareCode) {
+    public UserCourseModel createUserCourseLink(UserModel user, CourseModel course) {
         boolean isOwner = user.getId().equals(course.getCreatedBy().getId());
         UserCourseModel userCourse = new UserCourseModel();
         userCourse.setUser(user);
@@ -36,7 +38,6 @@ public class UserCourseService {
         userCourse.setAccepted(true);
         userCourse.setCustomStart(course.getStartDate());
         userCourse.setCustomEnd(course.getEndDate());
-        userCourse.setShareCode(shareCode);
         return userCourseRepository.save(userCourse);
     }
 
@@ -99,33 +100,15 @@ public class UserCourseService {
         UserModel user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
 
-        // Ache o vínculo do owner a partir do código
-        UserCourseModel ownerCourse = userCourseRepository.findByShareCode(shareCode)
+        CourseModel course = courseRepository.findByShareCode(shareCode)
                 .orElseThrow(() -> new IllegalArgumentException("Código inválido"));
 
-        // Validar se já existe vínculo desse usuário para este template
         boolean alreadyMember = userCourseRepository.existsByUserIdAndCourseTemplateId(
-                userId, ownerCourse.getCourseTemplate().getId());
+                userId, course.getId());
         if (alreadyMember) throw new IllegalArgumentException("Você já participa deste curso.");
-        UserCourseModel newUserCourse = createUserCourseLink(user, ownerCourse.getCourseTemplate(), shareCode);
+        UserCourseModel newUserCourse = createUserCourseLink(user, course);
         periodInstanceService.createPeriodInstancesForUserCourse(newUserCourse);
         return UserCourseMapper.toResponse(newUserCourse);
-    }
-
-    public String generateShareCode(String name) {
-        String sigla = name.replaceAll("[^A-Z]", " ").replaceAll("\\s+", "") // Letras maiúsculas
-                .toUpperCase();
-        if (sigla.isEmpty()) {
-            sigla = name.substring(0, Math.min(3, name.length())).toUpperCase();
-        }
-        String randomSuffix;
-        do {
-            randomSuffix = java.util.UUID.randomUUID().toString()
-                    .replaceAll("-", "")
-                    .substring(0, 6)
-                    .toUpperCase();
-        } while (userCourseRepository.existsByShareCode(sigla + "-" + randomSuffix));
-        return sigla + "-" + randomSuffix;
     }
 
 }

@@ -1,6 +1,7 @@
 package com.focados.foca.modules.materias.domain.services;
 
 import com.focados.foca.modules.materias.domain.dtos.mappers.DisciplineTemplateMapper;
+import com.focados.foca.modules.materias.domain.dtos.request.BatchCreateDisciplineTemplateDto;
 import com.focados.foca.modules.materias.domain.dtos.request.CreateDisciplineTemplateDto;
 import com.focados.foca.modules.materias.domain.dtos.request.UpdateDisciplineTemplateDto;
 import com.focados.foca.modules.materias.domain.dtos.response.DisciplineTemplateResponseDto;
@@ -11,6 +12,7 @@ import com.focados.foca.modules.periods.database.repository.PeriodTemplateReposi
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,6 +22,7 @@ public class DisciplineTemplateService {
 
     private final DisciplineTemplateRepository disciplineTemplateRepository;
     private final PeriodTemplateRepository periodTemplateRepository;
+    private final DisciplineInstanceService disciplineInstanceService;
 
     public DisciplineTemplateResponseDto create(CreateDisciplineTemplateDto dto) {
         PeriodTemplateModel periodTemplate = periodTemplateRepository.findById(dto.getPeriodTemplateId())
@@ -31,7 +34,29 @@ public class DisciplineTemplateService {
         discipline.setNotes(dto.getNotes());
 
         disciplineTemplateRepository.save(discipline);
+
+        disciplineInstanceService.createDisciplineInstanceForOwner(discipline);
+
         return DisciplineTemplateMapper.toResponse(discipline);
+    }
+
+    public List<DisciplineTemplateResponseDto> batchCreate(BatchCreateDisciplineTemplateDto dto) {
+        var period = periodTemplateRepository.findById(dto.getPeriodTemplateId())
+                .orElseThrow(() -> new IllegalArgumentException("Período não encontrado"));
+
+        List<DisciplineTemplateModel> templates = new ArrayList<>();
+        for (String name : dto.getNames()) {
+            DisciplineTemplateModel discipline = new DisciplineTemplateModel();
+            discipline.setPeriodTemplate(period);
+            discipline.setName(name);
+            disciplineTemplateRepository.save(discipline);
+            templates.add(discipline);
+        }
+        disciplineInstanceService.createDisciplineInstancesForOwnerBatch(templates);
+
+        return templates.stream()
+                .map(DisciplineTemplateMapper::toResponse)
+                .toList();
     }
 
     public List<DisciplineTemplateResponseDto> getAll() {

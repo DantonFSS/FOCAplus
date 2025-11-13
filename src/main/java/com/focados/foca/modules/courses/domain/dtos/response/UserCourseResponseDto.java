@@ -16,7 +16,6 @@ public class UserCourseResponseDto {
     // Campos do UserCourseModel
     private UUID userCourseId;
     private UserCourseRole role;
-    private String shareCode;
     private boolean accepted;
     private ZonedDateTime joinedAt;
     private LocalDate customStart;
@@ -36,6 +35,7 @@ public class UserCourseResponseDto {
     private CourseStatus status;
     private List<String> phones;
     private List<String> emails;
+    private String shareCode;
     private UUID createdBy;
 
 }

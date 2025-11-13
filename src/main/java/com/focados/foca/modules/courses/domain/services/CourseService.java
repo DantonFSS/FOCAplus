@@ -33,12 +33,14 @@ public class CourseService {
         CourseModel course = CourseMapper.toEntity(dto);
         course.setCreatedBy(user);
 
+        String shareCode = generateShareCode(course.getName());
+        course.setShareCode(shareCode);
+
         courseRepository.save(course);
 
         periodTemplateService.createPeriodsForCourse(course);
 
-        String shareCode = userCourseService.generateShareCode(course.getName());
-        userCourseService.createUserCourseLink(user, course, shareCode);
+        userCourseService.createUserCourseLink(user, course);
 
 
         return CourseMapper.toResponse(course);
@@ -146,5 +148,25 @@ public class CourseService {
             courseRepository.save(course);
         }
         return changed;
+    }
+
+    public String generateShareCode(String name) {
+        // Extrai sigla usando apenas as iniciais das palavras, ou primeiros 3 chars como fallback
+        String prefix = name.replaceAll("[^A-Za-z]", " ")
+                .replaceAll("\\s+", " ") // transforma para palavras separadas
+                .trim()
+                .replaceAll("([A-Za-z])[A-Za-z]* ?", "$1") // pega só iniciais
+                .toUpperCase();
+        if (prefix.isEmpty()) {
+            prefix = name.substring(0, Math.min(3, name.length())).toUpperCase();
+        }
+        String randomSuffix;
+        do {
+            randomSuffix = java.util.UUID.randomUUID().toString()
+                    .replaceAll("-", "")
+                    .substring(0, 6)
+                    .toUpperCase();
+        } while (courseRepository.findByShareCode(prefix + "-" + randomSuffix).isPresent());
+        return prefix + "-" + randomSuffix;
     }
 }

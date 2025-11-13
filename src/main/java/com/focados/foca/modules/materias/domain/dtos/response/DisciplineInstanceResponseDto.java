@@ -20,4 +20,6 @@ public class DisciplineInstanceResponseDto {
     private String gradeSystem;
     private Integer assessmentsCount;
     private ZonedDateTime createdAt;
+    private String name;
+    private String notes;
 }

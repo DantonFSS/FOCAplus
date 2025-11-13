@@ -1,6 +1,7 @@
 package com.focados.foca.modules.periods.domain.services;
 
 import com.focados.foca.modules.courses.database.repository.UserCourseRepository;
+import com.focados.foca.modules.materias.domain.services.DisciplineInstanceService;
 import com.focados.foca.modules.periods.database.entity.PeriodInstanceModel;
 import com.focados.foca.modules.periods.database.entity.PeriodTemplateModel;
 import com.focados.foca.modules.periods.database.repository.PeriodInstanceRepository;
@@ -24,6 +25,7 @@ public class PeriodInstanceService {
     private final PeriodTemplateRepository periodTemplateRepository;
     private final UserCourseRepository userCourseRepository;
     private final PeriodTemplateService periodTemplateService;
+    private final DisciplineInstanceService disciplineInstanceService;
 
     public void createPeriodInstancesForUserCourse(UserCourseModel userCourse) {
         List<PeriodTemplateModel> templates = periodTemplateRepository
@@ -38,6 +40,8 @@ public class PeriodInstanceService {
             instance.setPlannedStart(template.getPlannedStart());
             instance.setPlannedEnd(template.getPlannedEnd());
             periodInstanceRepository.save(instance);
+
+            disciplineInstanceService.createDisciplineInstancesForPeriod(instance, userCourse);
         }
     }
 

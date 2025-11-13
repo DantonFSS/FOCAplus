@@ -77,6 +77,9 @@ public class CourseModel {
     @Column(name = "emails")
     private List<String> emails;
 
+    @Column(name = "share_code", unique = true, nullable = false)
+    private String shareCode;
+
     @OneToMany(mappedBy = "courseTemplate", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserCourseModel> userCourses;
 }

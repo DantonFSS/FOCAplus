@@ -11,7 +11,6 @@ public class UserCourseMapper {
 
         dto.setUserCourseId(uc.getId());
         dto.setRole(uc.getRole());
-        dto.setShareCode(uc.getShareCode());
         dto.setAccepted(uc.isAccepted());
         dto.setJoinedAt(uc.getJoinedAt());
         dto.setCustomStart(uc.getCustomStart());
@@ -30,6 +29,7 @@ public class UserCourseMapper {
         dto.setStatus(c.getStatus());
         dto.setPhones(c.getPhones());
         dto.setEmails(c.getEmails());
+        dto.setShareCode(c.getShareCode());
         dto.setCreatedBy(c.getCreatedBy() == null ? null : c.getCreatedBy().getId());
 
         return dto;

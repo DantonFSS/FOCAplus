@@ -45,6 +45,7 @@ public class CourseMapper {
         response.setStatus(course.getStatus());
         response.setPhones(course.getPhones());
         response.setEmails(course.getEmails());
+        response.setShareCode(course.getShareCode());
         response.setCreatedBy(course.getCreatedBy() != null ? course.getCreatedBy().getId() : null);
         return response;
     }

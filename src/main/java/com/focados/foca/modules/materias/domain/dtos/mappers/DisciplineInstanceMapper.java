@@ -3,8 +3,6 @@ package com.focados.foca.modules.materias.domain.dtos.mappers;
 import com.focados.foca.modules.materias.database.entity.DisciplineInstanceModel;
 import com.focados.foca.modules.materias.domain.dtos.response.DisciplineInstanceResponseDto;
 
-import java.util.UUID;
-
 public class DisciplineInstanceMapper {
     public static DisciplineInstanceResponseDto toResponse(DisciplineInstanceModel model) {
         DisciplineInstanceResponseDto dto = new DisciplineInstanceResponseDto();
@@ -19,6 +17,10 @@ public class DisciplineInstanceMapper {
         dto.setGradeSystem(model.getGradeSystem().name());
         dto.setAssessmentsCount(model.getAssessmentsCount());
         dto.setCreatedAt(model.getCreatedAt());
+        if (model.getDisciplineTemplate() != null) {
+            dto.setName(model.getDisciplineTemplate().getName());
+            dto.setNotes(model.getDisciplineTemplate().getNotes());
+        }
         return dto;
     }
 }

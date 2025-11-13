@@ -28,6 +28,7 @@ public class CourseResponseDto {
     private CourseStatus status;
     private List<String> phones;
     private List<String> emails;
+    private String shareCode;
     private UUID createdBy;
 }
 

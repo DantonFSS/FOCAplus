@@ -1,5 +1,6 @@
 package com.focados.foca.modules.materias.domain.services;
 
+import com.focados.foca.modules.courses.database.entity.CourseModel;
 import com.focados.foca.modules.courses.database.entity.UserCourseModel;
 import com.focados.foca.modules.courses.database.repository.UserCourseRepository;
 import com.focados.foca.modules.materias.database.entity.DisciplineInstanceModel;
@@ -13,6 +14,7 @@ import com.focados.foca.modules.materias.domain.dtos.request.CreateDisciplineIns
 import com.focados.foca.modules.materias.domain.dtos.request.UpdateDisciplineInstanceDto;
 import com.focados.foca.modules.materias.domain.dtos.response.DisciplineInstanceResponseDto;
 import com.focados.foca.modules.periods.database.entity.PeriodInstanceModel;
+import com.focados.foca.modules.periods.database.entity.PeriodTemplateModel;
 import com.focados.foca.modules.periods.database.repository.PeriodInstanceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -55,6 +57,65 @@ public class DisciplineInstanceService {
 
         disciplineInstanceRepository.save(instance);
         return DisciplineInstanceMapper.toResponse(instance);
+    }
+
+    public void createDisciplineInstanceForOwner(DisciplineTemplateModel template) {
+        PeriodTemplateModel periodTemplate = template.getPeriodTemplate();
+        CourseModel course = periodTemplate.getCourseTemplate();
+
+        // Busca o owner do curso
+        UserCourseModel ownerUserCourse = userCourseRepository.findByUserIdAndCourseTemplateId(
+                course.getCreatedBy().getId(), course.getId()
+        ).orElseThrow(() -> new IllegalStateException("Owner UserCourse não encontrado"));
+
+        // Busca o period instance do owner (nesse período)
+        PeriodInstanceModel ownerPeriodInstance = periodInstanceRepository.findByUserCourseIdAndPeriodTemplateId(
+                ownerUserCourse.getId(), periodTemplate.getId()
+        ).orElseThrow(() -> new IllegalStateException("Owner PeriodInstance não encontrado"));
+
+        // Criar a instance
+        DisciplineInstanceModel instance = new DisciplineInstanceModel();
+        instance.setUserCourse(ownerUserCourse);
+        instance.setPeriodInstance(ownerPeriodInstance);
+        instance.setDisciplineTemplate(template);
+        instance.setPlannedStart(periodTemplate.getPlannedStart());
+        instance.setPlannedEnd(periodTemplate.getPlannedEnd());
+        instance.setStatus(DisciplineStatus.NOT_STARTED);
+        instance.setGrade(null);
+        instance.setGradeSystem(GradeSystem.NUMERIC_10);
+        instance.setAssessmentsCount(0);
+        instance.setCreatedAt(ZonedDateTime.now());
+
+        disciplineInstanceRepository.save(instance);
+    }
+
+    public void createDisciplineInstancesForOwnerBatch(List<DisciplineTemplateModel> templates) {
+        for (DisciplineTemplateModel template : templates) {
+            createDisciplineInstanceForOwner(template);
+        }
+    }
+
+    public void createDisciplineInstancesForPeriod(PeriodInstanceModel periodInstance, UserCourseModel userCourse) {
+        PeriodTemplateModel periodTemplate = periodInstance.getPeriodTemplate();
+        List<DisciplineTemplateModel> disciplineTemplates =
+                disciplineTemplateRepository.findByPeriodTemplateId(periodTemplate.getId());
+
+        for (DisciplineTemplateModel template : disciplineTemplates) {
+            DisciplineInstanceModel instance = new DisciplineInstanceModel();
+
+            instance.setUserCourse(userCourse);
+            instance.setPeriodInstance(periodInstance);
+            instance.setDisciplineTemplate(template);
+            instance.setPlannedStart(periodTemplate.getPlannedStart());
+            instance.setPlannedEnd(periodTemplate.getPlannedEnd());
+            instance.setStatus(DisciplineStatus.NOT_STARTED);
+            instance.setGrade(null);
+            instance.setGradeSystem(GradeSystem.NUMERIC_10);
+            instance.setAssessmentsCount(0);
+            instance.setCreatedAt(ZonedDateTime.now());
+
+            disciplineInstanceRepository.save(instance);
+        }
     }
 
     public List<DisciplineInstanceResponseDto> getAll() {

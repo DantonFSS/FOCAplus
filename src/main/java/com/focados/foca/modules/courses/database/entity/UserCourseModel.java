@@ -35,9 +35,6 @@ public class UserCourseModel {
     @Column(name = "role", nullable = false)
     private UserCourseRole role = UserCourseRole.OWNER;
 
-    @Column(name = "share_code, unique = true")
-    private String shareCode;
-
     @Column(name = "accepted")
     private boolean accepted = false;
 

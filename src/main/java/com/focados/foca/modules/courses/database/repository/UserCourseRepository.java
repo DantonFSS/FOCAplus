@@ -11,7 +11,6 @@ import java.util.UUID;
 @Repository
 public interface UserCourseRepository extends JpaRepository<UserCourseModel, UUID> {
     List<UserCourseModel> findByUserId(UUID userId);
-    Optional<UserCourseModel> findByShareCode(String shareCode);
     boolean existsByUserIdAndCourseTemplateId(UUID userId, UUID courseTemplateId);
-    boolean existsByShareCode(String shareCode);
+    Optional<UserCourseModel> findByUserIdAndCourseTemplateId(UUID userId, UUID courseTemplateId);
 }
