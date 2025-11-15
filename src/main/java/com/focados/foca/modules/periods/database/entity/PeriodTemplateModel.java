@@ -19,7 +19,7 @@ public class PeriodTemplateModel {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "course_template_id", nullable = false)
     private CourseModel courseTemplate;
 

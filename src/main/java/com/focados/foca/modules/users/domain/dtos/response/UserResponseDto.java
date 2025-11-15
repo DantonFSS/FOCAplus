@@ -19,6 +19,7 @@ public class UserResponseDto {
     private UUID id;
     private String cpf;
     private String name;
+    private String username;
     private String email;
     private String phone;
 

@@ -18,6 +18,7 @@ public class UserMapper {
         UserModel user = new UserModel();
         user.setCpf(createDto.getCpf());
         user.setName(createDto.getName());
+        user.setUsername(createDto.getUsername());
         user.setEmail(createDto.getEmail());
         user.setPhone(createDto.getPhone());
         user.setUserRegisterDate(LocalDateTime.now());
@@ -27,6 +28,7 @@ public class UserMapper {
     public static CreateUserResponseDto mappingToUserResponse(UserModel user) {
         CreateUserResponseDto response = new CreateUserResponseDto();
         response.setName(user.getName());
+        response.setUsername(user.getUsername());
         response.setEmail(user.getEmail());
         response.setPhone(user.getPhone());
         //user.getId() and user.getUserRegisterDate() were intentionally omitted
@@ -38,6 +40,7 @@ public class UserMapper {
         response.setId(user.getId());
         response.setCpf(user.getCpf());
         response.setName(user.getName());
+        response.setUsername(user.getUsername());
         response.setEmail(user.getEmail());
         response.setPhone(user.getPhone());
         response.setUserRegisterDate(user.getUserRegisterDate());
@@ -48,6 +51,7 @@ public class UserMapper {
         UserModel user = new UserModel();
         user.setCpf(userDto.getCpf());
         user.setName(userDto.getName());
+        user.setUsername(userDto.getUsername());
         user.setEmail(userDto.getEmail());
         user.setPhone(userDto.getPhone());
         user.setUserRegisterDate(userDto.getUserRegisterDate());

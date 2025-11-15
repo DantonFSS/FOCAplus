@@ -9,7 +9,7 @@ public class DisciplineInstanceMapper {
         dto.setId(model.getId());
         dto.setUserCourseId(model.getUserCourse().getId());
         dto.setDisciplineTemplateId(model.getDisciplineTemplate() != null ? model.getDisciplineTemplate().getId() : null);
-        dto.setPeriodInstanceId(model.getPeriodInstance().getId());
+        dto.setPeriodInstanceId(model.getPeriodInstance() != null ? model.getPeriodInstance().getId() : null);
         dto.setPlannedStart(model.getPlannedStart());
         dto.setPlannedEnd(model.getPlannedEnd());
         dto.setStatus(model.getStatus().name());

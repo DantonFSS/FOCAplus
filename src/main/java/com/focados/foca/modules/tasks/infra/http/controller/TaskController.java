@@ -2,11 +2,13 @@ package com.focados.foca.modules.tasks.infra.http.controller;
 
 import com.focados.foca.modules.tasks.domain.dtos.request.CompleteTaskDTO;
 import com.focados.foca.modules.tasks.domain.dtos.request.CreateTaskDTO;
+import com.focados.foca.modules.tasks.domain.dtos.request.InviteCollaboratorDTO;
 import com.focados.foca.modules.tasks.domain.dtos.request.UpdateTaskDTO;
 import com.focados.foca.modules.tasks.domain.dtos.response.CompleteTaskResponseDTO;
 import com.focados.foca.modules.tasks.domain.dtos.response.TaskResponseDTO;
 import com.focados.foca.modules.tasks.domain.services.TaskService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -56,4 +58,5 @@ public class TaskController {
     ) {
         return service.markTaskComplete(id, dto);
     }
+
 }

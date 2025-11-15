@@ -21,6 +21,11 @@ public class InsertUserService {
             throw new IllegalArgumentException("Email já está em uso");
         }
 
+        // Verifica se username já existe
+        if (repository.findByUsername(dto.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("Username já está em uso");
+        }
+
         // Mapeia DTO para entidade
         UserModel entity = UserMapper.mappingToUserEntity(dto);
 

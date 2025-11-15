@@ -71,7 +71,7 @@ public class DisciplineInstanceService {
         // Busca o period instance do owner (nesse período)
         PeriodInstanceModel ownerPeriodInstance = periodInstanceRepository.findByUserCourseIdAndPeriodTemplateId(
                 ownerUserCourse.getId(), periodTemplate.getId()
-        ).orElseThrow(() -> new IllegalStateException("Owner PeriodInstance não encontrado"));
+        ).orElse(null);
 
         // Criar a instance
         DisciplineInstanceModel instance = new DisciplineInstanceModel();

@@ -26,6 +26,8 @@ public class UserModel {
     private String email;
     private String phone;
     private String passwordHash;
+    @Column(unique = true, nullable = false)
+    private String username;
 
     @CreatedDate
     private LocalDateTime userRegisterDate;
