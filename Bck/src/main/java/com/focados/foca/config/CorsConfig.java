@@ -1,4 +1,4 @@
-package Root.config;
+package com.focados.foca.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,7 +13,12 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
-                        .allowedOrigins("http://localhost:8100")
+                        .allowedOrigins(
+                                "http://localhost:8100",
+                                "http://localhost:8081",
+                                "http://localhost:19006",
+                                "http://127.0.0.1:8081"
+                        )
                         .allowedMethods("GET", "POST", "PUT", "DELETE")
                         .allowedHeaders("*");
             }
