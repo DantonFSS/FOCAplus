@@ -1,0 +1,876 @@
+================================================================================
+                    ANÁLISE COMPLETA DO BACKEND - FOCAplus
+================================================================================
+
+Data da Análise: 2024
+Versão do Projeto: 0.0.1-SNAPSHOT
+Framework: Spring Boot 3.2.8
+Java Version: 17
+
+================================================================================
+1. VISÃO GERAL DO PROJETO
+================================================================================
+
+O FOCAplus é uma aplicação backend desenvolvida em Spring Boot que implementa
+um sistema de gestão acadêmica e de estudos. O projeto utiliza arquitetura
+modular seguindo princípios de Clean Architecture, com separação clara entre
+camadas de infraestrutura, domínio e apresentação.
+
+Tecnologias Principais:
+- Spring Boot 3.2.8
+- Spring Data JPA (Hibernate)
+- Spring Security com JWT
+- PostgreSQL (Banco de Dados)
+- Lombok (Redução de boilerplate)
+- SpringDoc OpenAPI (Swagger/OpenAPI)
+- Spring Cloud OpenFeign (Comunicação entre serviços)
+- Maven (Gerenciamento de dependências)
+
+================================================================================
+2. ESTRUTURA DE DIRETÓRIOS
+================================================================================
+
+A estrutura do projeto segue uma arquitetura modular baseada em domínios:
+
+Bck/
+├── src/main/java/com/focados/foca/
+│   ├── FocaApplication.java (Classe principal)
+│   ├── config/ (Configurações globais)
+│   │   ├── SecurityConfig.java
+│   │   ├── JwtAuthFilter.java
+│   │   └── SwaggerConfig.java
+│   └── modules/ (Módulos de domínio)
+│       ├── users/
+│       ├── courses/
+│       ├── periods/
+│       ├── materias/
+│       ├── tasks/
+│       ├── assessments/
+│       ├── studySessions/
+│       ├── selfEvaluation/
+│       ├── score/
+│       ├── friendships/
+│       └── rewards/
+│
+├── src/main/resources/
+│   ├── application.yml
+│   └── application.properties
+│
+├── pom.xml
+└── docker-compose.yml
+
+Cada módulo segue a estrutura:
+module/
+├── database/
+│   ├── entity/ (Entidades JPA)
+│   └── repository/ (Repositórios Spring Data)
+├── domain/
+│   ├── dtos/
+│   │   ├── request/ (DTOs de entrada)
+│   │   ├── response/ (DTOs de saída)
+│   │   └── mappers/ (Mappers de conversão)
+│   └── services/ (Lógica de negócio)
+└── infra/
+    └── http/
+        └── controller/ (Controllers REST)
+
+================================================================================
+3. CONFIGURAÇÕES
+================================================================================
+
+3.1. APPLICATION.YML
+- Porta do servidor: 8080 (configurável via WEBAPI_PORT)
+- Banco de dados: PostgreSQL
+  - URL padrão: jdbc:postgresql://localhost:5432/db_foca
+  - Usuário e senha configuráveis via variáveis de ambiente
+- JPA/Hibernate:
+  - DDL Auto: update (cria/atualiza tabelas automaticamente)
+  - Show SQL: true (para debug)
+  - Dialeto: PostgreSQLDialect
+- JWT:
+  - Secret: configurável via JWT_SECRET
+  - Expiração: 3600000ms (1 hora)
+  - Refresh Token: 86400000ms (24 horas)
+- Swagger/OpenAPI:
+  - Path: /foca.html
+  - API Docs: /foca
+  - Scan de pacotes: com.focados.foca.modules
+
+3.2. SECURITY CONFIG
+- Autenticação: JWT (JSON Web Token)
+- Política de sessão: STATELESS
+- CSRF: Desabilitado (API REST)
+- Endpoints públicos:
+  - /api/v1/auth/** (login, registro, refresh)
+  - /api/v1/users (criação de usuário)
+  - /swagger-ui/** (documentação)
+  - /v3/api-docs/**
+- Endpoints protegidos:
+  - /api/v1/** (requer autenticação JWT)
+
+3.3. JWT AUTH FILTER
+- Filtro de autenticação JWT
+- Valida tokens Bearer no header Authorization
+- Extrai userId do token e define no SecurityContext
+- Continua a requisição mesmo se token inválido (sem autenticação)
+
+================================================================================
+4. MÓDULOS E ENDPOINTS
+================================================================================
+
+4.1. MÓDULO: USERS (Usuários)
+----------------------------------------
+Estrutura:
+- Entidades: UserModel, RefreshTokenModel, UserRole
+- Repositórios: UserRepository, RefreshTokenRepository
+- Services: AuthService, InsertUserService, GetAllUsersService, AuthUtil
+- Controllers: AuthController, CreateUserController, GetAllUsersController
+
+Endpoints:
+
+POST   /api/v1/auth/register
+       Registra um novo usuário e retorna tokens JWT
+       Body: CreateUserDto
+       Response: AuthResponseDto
+
+POST   /api/v1/auth/login
+       Autentica usuário e retorna tokens JWT
+       Body: LoginDto
+       Response: AuthResponseDto
+
+POST   /api/v1/auth/refresh
+       Renova tokens usando refresh token
+       Body: RefreshTokenDto
+       Response: AuthResponseDto
+
+POST   /api/v1/users
+       Cria um novo usuário (endpoint alternativo)
+       Body: CreateUserDto
+       Response: CreateUserResponseDto
+
+GET    /api/v1/users
+       Lista todos os usuários
+       Response: List<UserResponseDto>
+
+Entidades:
+- UserModel: id (UUID), cpf, name, email (único), phone, passwordHash,
+            username (único), userRegisterDate
+- RefreshTokenModel: armazena refresh tokens para renovação de sessão
+
+4.2. MÓDULO: COURSES (Cursos)
+----------------------------------------
+Estrutura:
+- Entidades: CourseModel, UserCourseModel
+- Repositórios: CourseRepository, UserCourseRepository
+- Services: CourseService, CreateCourseService, GetCoursesService,
+            UserCourseService, CourseTemplateEditorService
+- Controllers: CourseController, CreateCourseController, GetCoursesController,
+               UserCourseController
+
+Endpoints:
+
+POST   /api/v1/courses
+       Cria um novo curso
+       Body: CreateCourseDto
+       Response: CourseResponseDto
+
+GET    /api/v1/courses
+       Lista todos os cursos do usuário autenticado
+       Response: List<CourseResponseDto>
+
+GET    /api/v1/courses/{id}
+       Obtém um curso específico
+       Response: CourseResponseDto
+
+PUT    /api/v1/courses/{id}
+       Atualiza um curso
+       Body: UpdateCourseDto
+       Response: CourseResponseDto
+
+DELETE /api/v1/courses/{id}
+       Deleta um curso
+       Response: 204 No Content
+
+GET    /api/v1/user-courses
+       Lista todos os cursos do usuário
+       Response: List<UserCourseResponseDto>
+
+GET    /api/v1/user-courses/{id}
+       Obtém um curso do usuário específico
+       Response: UserCourseResponseDto
+
+PUT    /api/v1/user-courses/{id}
+       Atualiza um curso do usuário
+       Body: UpdateUserCourseDto
+       Response: UserCourseResponseDto
+
+DELETE /api/v1/user-courses/{id}
+       Remove usuário de um curso
+       Response: 204 No Content
+
+POST   /api/v1/user-courses/join
+       Entra em um curso usando código de compartilhamento
+       Body: JoinCourseDto (shareCode)
+       Response: UserCourseResponseDto
+
+4.3. MÓDULO: PERIODS (Períodos)
+----------------------------------------
+Estrutura:
+- Entidades: PeriodTemplateModel, PeriodInstanceModel
+- Repositórios: PeriodTemplateRepository, PeriodInstanceRepository
+- Services: PeriodTemplateService, PeriodInstanceService,
+            GeneratePeriodsService
+- Controllers: PeriodTemplateController, PeriodInstanceController
+
+Endpoints - Period Templates:
+
+POST   /api/v1/period-templates
+       Cria um template de período (semestre)
+       Body: CreatePeriodTemplateDto
+       Response: PeriodTemplateResponseDto
+
+GET    /api/v1/period-templates
+       Lista todos os templates de período
+       Response: List<PeriodTemplateResponseDto>
+
+GET    /api/v1/period-templates/by-course/{courseTemplateId}
+       Lista templates por curso
+       Response: List<PeriodTemplateResponseDto>
+
+GET    /api/v1/period-templates/{id}
+       Obtém um template específico
+       Response: PeriodTemplateResponseDto
+
+PUT    /api/v1/period-templates/{id}
+       Atualiza um template
+       Body: UpdatePeriodTemplateDto
+       Response: PeriodTemplateResponseDto
+
+DELETE /api/v1/period-templates/{id}
+       Deleta um template
+       Response: 204 No Content
+
+Endpoints - Period Instances:
+
+POST   /api/v1/period-instances
+       Cria uma instância de período
+       Body: CreatePeriodInstanceDto
+       Response: PeriodInstanceResponseDto
+
+GET    /api/v1/period-instances
+       Lista todas as instâncias
+       Response: List<PeriodInstanceResponseDto>
+
+GET    /api/v1/period-instances/by-user-course/{userCourseId}
+       Lista instâncias por curso do usuário
+       Response: List<PeriodInstanceResponseDto>
+
+GET    /api/v1/period-instances/{id}
+       Obtém uma instância específica
+       Response: PeriodInstanceResponseDto
+
+PUT    /api/v1/period-instances/{id}
+       Atualiza uma instância
+       Body: UpdatePeriodInstanceDto
+       Response: PeriodInstanceResponseDto
+
+DELETE /api/v1/period-instances/{id}
+       Deleta uma instância
+       Response: 204 No Content
+
+4.4. MÓDULO: MATERIAS (Disciplinas)
+----------------------------------------
+Estrutura:
+- Entidades: DisciplineTemplateModel, DisciplineInstanceModel,
+             DisciplineTeacherModel, DisciplineScheduleModel, MateriaModel
+- Repositórios: DisciplineTemplateRepository, DisciplineInstanceRepository,
+                DisciplineTeacherRepository, DisciplineScheduleRepository,
+                MateriaRepository
+- Services: DisciplineTemplateService, DisciplineInstanceService,
+            DisciplineTeacherService, DisciplineScheduleService
+- Controllers: DisciplineTemplateController, DisciplineInstanceController,
+               DisciplineTeacherController, DisciplineScheduleController
+
+Endpoints - Discipline Templates:
+
+POST   /api/v1/discipline-templates
+       Cria um template de disciplina
+       Body: CreateDisciplineTemplateDto
+       Response: DisciplineTemplateResponseDto
+
+POST   /api/v1/discipline-templates/batch
+       Cria múltiplos templates em lote
+       Body: BatchCreateDisciplineTemplateDto
+       Response: List<DisciplineTemplateResponseDto>
+
+GET    /api/v1/discipline-templates
+       Lista todos os templates
+       Response: List<DisciplineTemplateResponseDto>
+
+GET    /api/v1/discipline-templates/by-period/{periodTemplateId}
+       Lista templates por período
+       Response: List<DisciplineTemplateResponseDto>
+
+GET    /api/v1/discipline-templates/{id}
+       Obtém um template específico
+       Response: DisciplineTemplateResponseDto
+
+PUT    /api/v1/discipline-templates/{id}
+       Atualiza um template
+       Body: UpdateDisciplineTemplateDto
+       Response: DisciplineTemplateResponseDto
+
+DELETE /api/v1/discipline-templates/{id}
+       Deleta um template
+       Response: 204 No Content
+
+Endpoints - Discipline Instances:
+
+POST   /api/v1/discipline-instances
+       Cria uma instância de disciplina
+       Body: CreateDisciplineInstanceDto
+       Response: DisciplineInstanceResponseDto
+
+GET    /api/v1/discipline-instances
+       Lista todas as instâncias
+       Response: List<DisciplineInstanceResponseDto>
+
+GET    /api/v1/discipline-instances/by-period/{periodInstanceId}
+       Lista instâncias por período
+       Response: List<DisciplineInstanceResponseDto>
+
+GET    /api/v1/discipline-instances/{id}
+       Obtém uma instância específica
+       Response: DisciplineInstanceResponseDto
+
+PUT    /api/v1/discipline-instances/{id}
+       Atualiza uma instância
+       Body: UpdateDisciplineInstanceDto
+       Response: DisciplineInstanceResponseDto
+
+DELETE /api/v1/discipline-instances/{id}
+       Deleta uma instância
+       Response: 204 No Content
+
+Endpoints - Discipline Teachers:
+
+POST   /api/v1/discipline-teachers
+       Cria um professor para disciplina
+       Body: CreateDisciplineTeacherDTO
+       Response: DisciplineTeacherResponseDTO
+
+GET    /api/v1/discipline-teachers
+       Lista todos os professores
+       Response: List<DisciplineTeacherResponseDTO>
+
+GET    /api/v1/discipline-teachers/by-discipline/{disciplineInstanceId}
+       Lista professores por disciplina
+       Response: List<DisciplineTeacherResponseDTO>
+
+GET    /api/v1/discipline-teachers/{id}
+       Obtém um professor específico
+       Response: DisciplineTeacherResponseDTO
+
+PUT    /api/v1/discipline-teachers/{id}
+       Atualiza um professor
+       Body: UpdateDisciplineTeacherDTO
+       Response: DisciplineTeacherResponseDTO
+
+DELETE /api/v1/discipline-teachers/{id}
+       Remove um professor
+       Response: 204 No Content
+
+Endpoints - Discipline Schedules:
+
+POST   /api/v1/discipline-schedules
+       Cria um horário para disciplina
+       Body: CreateDisciplineScheduleDTO
+       Response: DisciplineScheduleResponseDTO
+
+GET    /api/v1/discipline-schedules
+       Lista todos os horários
+       Response: List<DisciplineScheduleResponseDTO>
+
+GET    /api/v1/discipline-schedules/by-discipline/{disciplineInstanceId}
+       Lista horários por disciplina
+       Response: List<DisciplineScheduleResponseDTO>
+
+GET    /api/v1/discipline-schedules/{id}
+       Obtém um horário específico
+       Response: DisciplineScheduleResponseDTO
+
+PUT    /api/v1/discipline-schedules/{id}
+       Atualiza um horário
+       Body: UpdateDisciplineScheduleDTO
+       Response: DisciplineScheduleResponseDTO
+
+DELETE /api/v1/discipline-schedules/{id}
+       Remove um horário
+       Response: 204 No Content
+
+4.5. MÓDULO: TASKS (Tarefas)
+----------------------------------------
+Estrutura:
+- Entidades: TaskModel, TaskCollaboratorModel
+- Repositórios: TaskRepository, TaskCollaboratorRepository
+- Services: TaskService, TaskCollaboratorService
+- Controllers: TaskController, TaskCollaboratorController
+
+Endpoints - Tasks:
+
+POST   /api/v1/tasks
+       Cria uma nova tarefa
+       Body: CreateTaskDTO
+       Response: TaskResponseDTO
+
+GET    /api/v1/tasks
+       Lista todas as tarefas
+       Response: List<TaskResponseDTO>
+
+GET    /api/v1/tasks/by-discipline/{disciplineInstanceId}
+       Lista tarefas por disciplina
+       Response: List<TaskResponseDTO>
+
+GET    /api/v1/tasks/{id}
+       Obtém uma tarefa específica
+       Response: TaskResponseDTO
+
+PUT    /api/v1/tasks/{id}
+       Atualiza uma tarefa
+       Body: UpdateTaskDTO
+       Response: TaskResponseDTO
+
+DELETE /api/v1/tasks/{id}
+       Deleta uma tarefa
+       Response: 204 No Content
+
+PUT    /api/v1/tasks/complete/{id}
+       Marca/desmarca tarefa como completa
+       Body: CompleteTaskDTO
+       Response: CompleteTaskResponseDTO
+
+Endpoints - Task Collaborators:
+
+POST   /api/v1/tasks/collaborators/{taskId}
+       Convida um colaborador para a tarefa
+       Body: InviteCollaboratorDTO (username)
+       Response: 204 No Content
+
+GET    /api/v1/tasks/collaborators/{taskId}
+       Lista colaboradores de uma tarefa
+       Response: List<TaskCollaboratorResponseDTO>
+
+DELETE /api/v1/tasks/collaborators/{taskId}/{userId}
+       Remove um colaborador da tarefa
+       Response: 204 No Content
+
+4.6. MÓDULO: ASSESSMENTS (Avaliações)
+----------------------------------------
+Estrutura:
+- Entidades: AssessmentModel, AssessmentCollaboratorModel
+- Repositórios: AssessmentRepository, AssessmentCollaboratorRepository
+- Services: AssessmentService, AssessmentCollaboratorService
+- Controllers: AssessmentController, AssessmentCollaboratorController
+
+Endpoints - Assessments:
+
+POST   /api/v1/assessments
+       Cria uma nova avaliação
+       Body: CreateAssessmentDTO
+       Response: AssessmentResponseDTO
+
+GET    /api/v1/assessments
+       Lista todas as avaliações
+       Response: List<AssessmentResponseDTO>
+
+GET    /api/v1/assessments/by-discipline/{disciplineInstanceId}
+       Lista avaliações por disciplina
+       Response: List<AssessmentResponseDTO>
+
+GET    /api/v1/assessments/{id}
+       Obtém uma avaliação específica
+       Response: AssessmentResponseDTO
+
+PUT    /api/v1/assessments/{id}
+       Atualiza uma avaliação
+       Body: UpdateAssessmentDTO
+       Response: AssessmentResponseDTO
+
+DELETE /api/v1/assessments/{id}
+       Deleta uma avaliação
+       Response: 204 No Content
+
+Endpoints - Assessment Collaborators:
+
+GET    /api/v1/assessments/collaborators/{assessmentId}
+       Lista colaboradores de uma avaliação
+       Response: List<AssessmentCollaboratorResponseDTO>
+
+POST   /api/v1/assessments/collaborators/{assessmentId}
+       Convida um colaborador para a avaliação
+       Body: InviteAssessmentCollaboratorDTO (username)
+       Response: 204 No Content
+
+DELETE /api/v1/assessments/collaborators/{assessmentId}/{userId}
+       Remove um colaborador da avaliação
+       Response: 204 No Content
+
+4.7. MÓDULO: STUDY SESSIONS (Sessões de Estudo)
+----------------------------------------
+Estrutura:
+- Entidades: StudySessionModel
+- Repositórios: StudySessionRepository
+- Services: StudySessionService
+- Controllers: StudySessionController
+
+Endpoints:
+
+POST   /api/v1/study-sessions
+       Cria uma nova sessão de estudo
+       Body: CreateStudySessionDTO
+       Response: StudySessionResponseDTO
+
+GET    /api/v1/study-sessions
+       Lista todas as sessões
+       Response: List<StudySessionResponseDTO>
+
+GET    /api/v1/study-sessions/by-discipline/{disciplineInstanceId}
+       Lista sessões por disciplina
+       Response: List<StudySessionResponseDTO>
+
+GET    /api/v1/study-sessions/{id}
+       Obtém uma sessão específica
+       Response: StudySessionResponseDTO
+
+DELETE /api/v1/study-sessions/{id}
+       Deleta uma sessão
+       Response: 204 No Content
+
+4.8. MÓDULO: SELF EVALUATION (Autoavaliação)
+----------------------------------------
+Estrutura:
+- Entidades: SelfEvalQuestionModel, SelfEvalAnswerModel
+- Repositórios: SelfEvalQuestionRepository, SelfEvalAnswerRepository
+- Services: SelfEvalQuestionService, SelfEvalAnswerService
+- Controllers: SelfEvalQuestionController, SelfEvalAnswerController
+
+Endpoints - Self Eval Questions:
+
+POST   /api/v1/self-eval-questions
+       Cria uma nova pergunta de autoavaliação
+       Body: SelfEvalQuestionRequestDTO
+       Response: SelfEvalQuestionResponseDTO
+
+GET    /api/v1/self-eval-questions
+       Lista todas as perguntas
+       Response: List<SelfEvalQuestionResponseDTO>
+
+GET    /api/v1/self-eval-questions/{id}
+       Obtém uma pergunta específica
+       Response: SelfEvalQuestionResponseDTO
+
+PUT    /api/v1/self-eval-questions/{id}
+       Atualiza uma pergunta
+       Body: SelfEvalQuestionRequestDTO
+       Response: SelfEvalQuestionResponseDTO
+
+DELETE /api/v1/self-eval-questions/{id}
+       Deleta uma pergunta
+       Response: 204 No Content
+
+Endpoints - Self Eval Answers:
+
+POST   /api/v1/self-eval-answers
+       Cria uma resposta de autoavaliação
+       Body: SelfEvalAnswerRequestDTO
+       Response: SelfEvalAnswerResponseDTO
+
+GET    /api/v1/self-eval-answers
+       Lista todas as respostas
+       Response: List<SelfEvalAnswerResponseDTO>
+
+GET    /api/v1/self-eval-answers/by-question/{questionId}
+       Lista respostas por pergunta
+       Response: List<SelfEvalAnswerResponseDTO>
+
+GET    /api/v1/self-eval-answers/by-session/{sessionId}
+       Lista respostas por sessão de estudo
+       Response: List<SelfEvalAnswerResponseDTO>
+
+GET    /api/v1/self-eval-answers/{id}
+       Obtém uma resposta específica
+       Response: SelfEvalAnswerResponseDTO
+
+PUT    /api/v1/self-eval-answers/{id}
+       Atualiza uma resposta
+       Body: SelfEvalAnswerRequestDTO
+       Response: SelfEvalAnswerResponseDTO
+
+DELETE /api/v1/self-eval-answers/{id}
+       Deleta uma resposta
+       Response: 204 No Content
+
+4.9. MÓDULO: SCORE (Pontuação)
+----------------------------------------
+Estrutura:
+- Entidades: ScoreRecordModel
+- Repositórios: ScoreRecordRepository
+- Services: ScoreRecordService
+- Controllers: ScoreRecordController
+
+Endpoints:
+
+GET    /api/v1/score-records/me
+       Lista pontuações do usuário autenticado
+       Response: List<ScoreRecordResponseDTO>
+
+GET    /api/v1/score-records/by-discipline/{disciplineInstanceId}
+       Lista pontuações por disciplina
+       Response: List<ScoreRecordResponseDTO>
+
+GET    /api/v1/score-records/by-course/{userCourseId}
+       Lista pontuações por curso
+       Response: List<ScoreRecordResponseDTO>
+
+4.10. MÓDULO: FRIENDSHIPS (Amizades)
+----------------------------------------
+Estrutura:
+- Entidades: FriendshipModel
+- Repositórios: FriendshipRepository
+- Services: FriendshipService
+- Controllers: FriendshipController
+
+Endpoints:
+
+POST   /api/v1/friendships
+       Solicita uma amizade
+       Body: FriendshipRequestDTO (friendUserId)
+       Response: 204 No Content
+
+PUT    /api/v1/friendships/accept/{friendshipId}
+       Aceita uma solicitação de amizade
+       Response: 204 No Content
+
+DELETE /api/v1/friendships/{friendshipId}
+       Rejeita ou remove uma amizade
+       Response: 204 No Content
+
+GET    /api/v1/friendships/received
+       Lista solicitações recebidas
+       Response: List<FriendshipResponseDTO>
+
+GET    /api/v1/friendships/sent
+       Lista solicitações enviadas
+       Response: List<FriendshipResponseDTO>
+
+GET    /api/v1/friendships/accepted
+       Lista amizades aceitas
+       Response: List<FriendshipResponseDTO>
+
+4.11. MÓDULO: REWARDS (Recompensas)
+----------------------------------------
+Estrutura:
+- Entidades: RewardModel
+- Repositórios: RewardRepository
+- Services: (Não identificados controllers específicos)
+
+Nota: Este módulo possui entidade e repositório, mas não foram encontrados
+controllers ou endpoints expostos. Pode estar em desenvolvimento ou ser usado
+internamente.
+
+================================================================================
+5. PADRÕES ARQUITETURAIS
+================================================================================
+
+5.1. Clean Architecture / Hexagonal Architecture
+O projeto segue princípios de Clean Architecture com separação em camadas:
+
+- Domain Layer (Camada de Domínio):
+  * Services: Contém a lógica de negócio pura
+  * DTOs: Objetos de transferência de dados (Request/Response)
+  * Mappers: Conversão entre entidades e DTOs
+
+- Infrastructure Layer (Camada de Infraestrutura):
+  * Database: Entidades JPA e Repositórios
+  * HTTP: Controllers REST
+
+- Application Layer (Camada de Aplicação):
+  * FocaApplication: Classe principal Spring Boot
+  * Config: Configurações globais (Security, Swagger, etc.)
+
+5.2. Padrão Repository
+Todos os módulos utilizam Spring Data JPA Repositories para acesso a dados,
+seguindo o padrão Repository que abstrai a camada de persistência.
+
+5.3. Padrão DTO (Data Transfer Object)
+Separação clara entre entidades de domínio (Models) e objetos de transferência
+(DTOs), garantindo que a estrutura interna não seja exposta diretamente na API.
+
+5.4. Padrão Service
+Cada módulo possui services que encapsulam a lógica de negócio, mantendo os
+controllers leves e focados apenas em receber requisições e retornar respostas.
+
+================================================================================
+6. SEGURANÇA
+================================================================================
+
+6.1. Autenticação JWT
+- Tokens JWT para autenticação stateless
+- Access Token: 1 hora de validade
+- Refresh Token: 24 horas de validade
+- Secret configurável via variável de ambiente
+
+6.2. Spring Security
+- Filtro JWT customizado (JwtAuthFilter)
+- Proteção de endpoints via SecurityFilterChain
+- Senhas criptografadas com BCrypt
+
+6.3. Endpoints Públicos vs Protegidos
+- Públicos: Autenticação, registro, documentação
+- Protegidos: Todos os demais endpoints requerem JWT válido
+
+================================================================================
+7. BANCO DE DADOS
+================================================================================
+
+7.1. PostgreSQL
+- Banco de dados relacional PostgreSQL
+- Configuração via variáveis de ambiente ou application.yml
+- DDL Auto: update (cria/atualiza schema automaticamente)
+
+7.2. Entidades Principais Identificadas:
+- users (UserModel, RefreshTokenModel)
+- courses (CourseModel, UserCourseModel)
+- periods (PeriodTemplateModel, PeriodInstanceModel)
+- materias/disciplines (DisciplineTemplateModel, DisciplineInstanceModel,
+                        DisciplineTeacherModel, DisciplineScheduleModel)
+- tasks (TaskModel, TaskCollaboratorModel)
+- assessments (AssessmentModel, AssessmentCollaboratorModel)
+- studySessions (StudySessionModel)
+- selfEvaluation (SelfEvalQuestionModel, SelfEvalAnswerModel)
+- score (ScoreRecordModel)
+- friendships (FriendshipModel)
+- rewards (RewardModel)
+
+7.3. Relacionamentos
+O sistema possui relacionamentos complexos entre entidades:
+- Usuários podem ter múltiplos cursos (UserCourse)
+- Cursos têm períodos (templates e instâncias)
+- Períodos têm disciplinas (templates e instâncias)
+- Disciplinas têm tarefas, avaliações e sessões de estudo
+- Tarefas e avaliações podem ter colaboradores
+- Usuários podem ter amizades entre si
+
+================================================================================
+8. DOCUMENTAÇÃO API
+================================================================================
+
+8.1. Swagger/OpenAPI
+- Documentação automática via SpringDoc OpenAPI
+- Acessível em: /foca.html
+- API Docs em: /foca
+- Configurado com suporte a autenticação Bearer JWT
+
+8.2. Estrutura de Endpoints
+Todos os endpoints seguem o padrão REST:
+- Base path: /api/v1
+- Verbos HTTP: GET, POST, PUT, DELETE
+- Respostas padronizadas: ResponseEntity com DTOs
+
+================================================================================
+9. DEPENDÊNCIAS PRINCIPAIS
+================================================================================
+
+Spring Boot Starter Web: API REST
+Spring Boot Starter Data JPA: Persistência
+Spring Boot Starter Security: Segurança
+Spring Boot Starter Validation: Validação de dados
+PostgreSQL Driver: Conector do banco
+Lombok: Redução de código boilerplate
+Spring Cloud OpenFeign: Cliente HTTP declarativo
+SpringDoc OpenAPI: Documentação Swagger
+JJWT: Geração e validação de tokens JWT
+
+================================================================================
+10. DOCKER
+================================================================================
+
+O projeto possui docker-compose.yml configurado com:
+- Serviço de banco de dados PostgreSQL
+- Serviço backend (porta 8000:8080)
+- Serviço frontend (porta 9000:80)
+- Configuração via arquivo .env
+
+================================================================================
+11. ESTATÍSTICAS DO PROJETO
+================================================================================
+
+Módulos: 11
+Controllers: 22
+Services: 24
+Repositories: 21
+Entidades: 21
+DTOs: 53+ (Request e Response)
+
+Endpoints totais: ~99 endpoints REST identificados
+
+Módulos por categoria:
+- Gestão Acadêmica: courses, periods, materias
+- Atividades: tasks, assessments, studySessions
+- Avaliação: selfEvaluation, score
+- Social: friendships
+- Sistema: users, rewards
+
+================================================================================
+12. OBSERVAÇÕES E RECOMENDAÇÕES
+================================================================================
+
+12.1. Pontos Fortes:
+- Arquitetura modular bem organizada
+- Separação clara de responsabilidades
+- Uso de DTOs para isolamento da camada de domínio
+- Documentação automática com Swagger
+- Segurança implementada com JWT
+- Padrões consistentes entre módulos
+
+12.2. Áreas de Atenção:
+- Módulo rewards não possui endpoints expostos
+- Alguns controllers podem ter lógica que deveria estar em services
+- Validação de dados pode ser expandida
+- Tratamento de erros pode ser padronizado globalmente
+- Logs e monitoramento podem ser adicionados
+
+12.3. Possíveis Melhorias:
+- Implementar tratamento global de exceções (@ControllerAdvice)
+- Adicionar validações mais robustas nos DTOs
+- Implementar paginação em listagens
+- Adicionar filtros e busca avançada
+- Implementar cache onde apropriado
+- Adicionar testes unitários e de integração
+- Documentar relacionamentos entre entidades
+- Implementar soft delete onde necessário
+
+================================================================================
+13. CONCLUSÃO
+================================================================================
+
+O backend do FOCAplus é uma aplicação Spring Boot bem estruturada, seguindo
+boas práticas de arquitetura de software. O projeto demonstra:
+
+- Organização modular por domínio
+- Separação de responsabilidades
+- Uso adequado de padrões de projeto
+- Segurança implementada
+- API REST completa e documentada
+
+O sistema cobre funcionalidades completas de gestão acadêmica, incluindo
+cursos, períodos, disciplinas, tarefas, avaliações, sessões de estudo,
+autoavaliação, pontuação e relacionamentos sociais entre usuários.
+
+A arquitetura permite fácil manutenção e extensão, com cada módulo sendo
+relativamente independente e seguindo os mesmos padrões estruturais.
+
+================================================================================
+FIM DA ANÁLISE
+================================================================================
+
