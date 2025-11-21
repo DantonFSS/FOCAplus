@@ -13,6 +13,7 @@ import com.focados.foca.modules.periods.domain.services.PeriodInstanceService;
 import com.focados.foca.modules.users.database.entity.UserModel;
 import com.focados.foca.modules.users.database.repository.UserRepository;
 import com.focados.foca.modules.users.domain.services.AuthUtil;
+import com.focados.foca.shared.common.utils.exceptions.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -48,15 +49,32 @@ public class UserCourseService {
     }
 
     public UserCourseResponseDto getById(UUID id) {
+        UUID userId = AuthUtil.getAuthenticatedUserId();
         UserCourseModel userCourse = userCourseRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Vínculo não encontrado"));
+                .orElseThrow(UserCourseNotFoundException::new);
+
+        if (!userCourse.getUser().getId().equals(userId)) {
+            throw new UserNotAllowedException();
+        }
+
         return UserCourseMapper.toResponse(userCourse);
     }
 
     public UserCourseResponseDto updateUserCourse(UUID id, UpdateUserCourseDto dto) {
+        UUID userId = AuthUtil.getAuthenticatedUserId();
         UserCourseModel userCourse = userCourseRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Vínculo não encontrado"));
+                .orElseThrow(UserCourseNotFoundException::new);
         CourseModel course = userCourse.getCourseTemplate();
+
+        if (!userCourse.getUser().getId().equals(userId)) {
+            throw new UserNotAllowedException();
+        }
+
+        if (dto.getCustomStart() != null && dto.getCustomEnd() != null) {
+            if (dto.getCustomEnd().isBefore(dto.getCustomStart())) {
+                throw new InvalidCourseDatesException();
+            }
+        }
 
         // Atualiza campos do vínculo
         userCourse.setCustomStart(dto.getCustomStart());
@@ -88,9 +106,9 @@ public class UserCourseService {
     public void deleteUserCourseById(UUID id) {
         UUID userId = AuthUtil.getAuthenticatedUserId();
         UserCourseModel userCourse = userCourseRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Vínculo não encontrado"));
+                .orElseThrow(UserCourseNotFoundException::new);
         if (!userCourse.getUser().getId().equals(userId)) {
-            throw new SecurityException("Somente o próprio usuário pode deletar seu vínculo.");
+            throw new UserNotAllowedException();
         }
         userCourseRepository.delete(userCourse);
     }
@@ -98,14 +116,14 @@ public class UserCourseService {
     public UserCourseResponseDto joinCourseByShareCode(String shareCode) {
         UUID userId = AuthUtil.getAuthenticatedUserId();
         UserModel user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+                .orElseThrow(UserNotFoundException::new);
 
         CourseModel course = courseRepository.findByShareCode(shareCode)
-                .orElseThrow(() -> new IllegalArgumentException("Código inválido"));
+                .orElseThrow(ShareCodeInvalidException::new);
 
         boolean alreadyMember = userCourseRepository.existsByUserIdAndCourseTemplateId(
                 userId, course.getId());
-        if (alreadyMember) throw new IllegalArgumentException("Você já participa deste curso.");
+        if (alreadyMember) throw new UserAlreadyInCourseException();
         UserCourseModel newUserCourse = createUserCourseLink(user, course);
         periodInstanceService.createPeriodInstancesForUserCourse(newUserCourse);
         return UserCourseMapper.toResponse(newUserCourse);

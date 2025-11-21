@@ -9,6 +9,7 @@ import com.focados.foca.modules.periods.domain.dtos.mappers.PeriodTemplateMapper
 import com.focados.foca.modules.periods.domain.dtos.request.CreatePeriodTemplateDto;
 import com.focados.foca.modules.periods.domain.dtos.request.UpdatePeriodTemplateDto;
 import com.focados.foca.modules.periods.domain.dtos.response.PeriodTemplateResponseDto;
+import com.focados.foca.shared.common.utils.exceptions.InvalidCourseDatesException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -41,7 +42,7 @@ public class PeriodTemplateService {
         DivisionType type = course.getDivisionType();
 
         if (courseStart == null || courseEnd == null || !courseStart.isBefore(courseEnd)) {
-            throw new IllegalArgumentException("Data de início deve ser anterior à data de término do curso.");
+            throw new InvalidCourseDatesException();
         }
 
         String prefix = DIVISION_TYPE_PT.getOrDefault(type, "PERÍODO");

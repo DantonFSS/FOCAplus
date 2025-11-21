@@ -91,6 +91,111 @@ public class ErrorHandler {
                 ));
     }
 
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ApplicationError> userNotFoundException(
+            UserNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ApplicationError(
+                        request,
+                        HttpStatus.NOT_FOUND,
+                        ex.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(InvalidCourseDatesException.class)
+    public ResponseEntity<ApplicationError> invalidCourseDatesException(
+            InvalidCourseDatesException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ApplicationError(
+                        request,
+                        HttpStatus.BAD_REQUEST,
+                        ex.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(CourseNotFoundException.class)
+    public ResponseEntity<ApplicationError> courseNotFoundException(
+            CourseNotFoundException ex,
+            HttpServletRequest request) {
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ApplicationError(
+                        request,
+                        HttpStatus.NOT_FOUND,
+                        ex.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(UserNotAllowedException.class)
+    public ResponseEntity<ApplicationError> userNotAllowedException(
+            UserNotAllowedException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ApplicationError(
+                        request,
+                        HttpStatus.FORBIDDEN,
+                        ex.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(UserCourseNotFoundException.class)
+    public ResponseEntity<ApplicationError> userCourseNotFoundException(
+            UserCourseNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ApplicationError(
+                        request,
+                        HttpStatus.NOT_FOUND,
+                        ex.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(ShareCodeInvalidException.class)
+    public ResponseEntity<ApplicationError> shareCodeInvalidException(
+            ShareCodeInvalidException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ApplicationError(
+                        request,
+                        HttpStatus.BAD_REQUEST,
+                        ex.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(UserAlreadyInCourseException.class)
+    public ResponseEntity<ApplicationError> userAlreadyInCourseException(
+            UserAlreadyInCourseException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ApplicationError(
+                        request,
+                        HttpStatus.BAD_REQUEST,
+                        ex.getMessage()
+                ));
+    }
+
 
 
 }

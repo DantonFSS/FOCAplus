@@ -10,6 +10,10 @@ import com.focados.foca.modules.periods.domain.services.PeriodTemplateService;
 import com.focados.foca.modules.users.database.entity.UserModel;
 import com.focados.foca.modules.users.database.repository.UserRepository;
 import com.focados.foca.modules.users.domain.services.AuthUtil;
+import com.focados.foca.shared.common.utils.exceptions.CourseNotFoundException;
+import com.focados.foca.shared.common.utils.exceptions.InvalidCourseDatesException;
+import com.focados.foca.shared.common.utils.exceptions.UserNotAllowedException;
+import com.focados.foca.shared.common.utils.exceptions.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +32,7 @@ public class CourseService {
     public CourseResponseDto create(CreateCourseDto dto) {
         UUID userId = AuthUtil.getAuthenticatedUserId();
         UserModel user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+                .orElseThrow(UserNotFoundException::new);
 
         CourseModel course = CourseMapper.toEntity(dto);
         course.setCreatedBy(user);
@@ -55,14 +59,32 @@ public class CourseService {
     }
 
     public CourseResponseDto getById(UUID id) {
+        UUID userId = AuthUtil.getAuthenticatedUserId();
         CourseModel course = courseRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Curso não encontrado"));
+                .orElseThrow(CourseNotFoundException::new);
+
+        if (!course.getCreatedBy().getId().equals(userId)) {
+            throw new UserNotAllowedException();
+        }
+
         return CourseMapper.toResponse(course);
     }
 
     public CourseResponseDto update(UUID id, UpdateCourseDto dto) {
+        UUID userId = AuthUtil.getAuthenticatedUserId();
+
         CourseModel course = courseRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Curso não encontrado"));
+                .orElseThrow(CourseNotFoundException::new);
+
+        if (!course.getCreatedBy().getId().equals(userId)) {
+            throw new UserNotAllowedException();
+        }
+
+        if (dto.getStartDate() != null && dto.getEndDate() != null) {
+            if (dto.getEndDate().isBefore(dto.getStartDate())) {
+                throw new InvalidCourseDatesException();
+            }
+        }
 
         course.setName(dto.getName());
         course.setLevel(dto.getLevel());
@@ -85,9 +107,10 @@ public class CourseService {
     public void deleteById(UUID id) {
         UUID userId = AuthUtil.getAuthenticatedUserId();
         CourseModel course = courseRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Curso não encontrado"));
+                .orElseThrow(CourseNotFoundException::new);
+
         if (!course.getCreatedBy().getId().equals(userId)) {
-            throw new SecurityException("Apenas owner pode deletar o template.");
+            throw new UserNotAllowedException();
         }
         courseRepository.delete(course);
     }
