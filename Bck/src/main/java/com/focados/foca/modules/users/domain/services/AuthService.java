@@ -9,6 +9,7 @@ import com.focados.foca.modules.users.domain.dtos.request.LoginDto;
 import com.focados.foca.modules.users.domain.dtos.request.RefreshTokenDto;
 import com.focados.foca.modules.users.domain.dtos.response.AuthResponseDto;
 import com.focados.foca.modules.users.domain.dtos.mappers.UserMapper;
+import com.focados.foca.shared.common.utils.exceptions.*;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
@@ -42,13 +43,19 @@ public class AuthService {
     public AuthResponseDto register(CreateUserDto createUserDto) {
         // Verifica se email já existe
         if (userRepository.findByEmail(createUserDto.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email já está em uso");
+            throw new EmailAlreadyUsedException(createUserDto.getEmail());
+        }
+
+        // Verifica se username já existe
+        if (userRepository.findByUsername(createUserDto.getUsername()).isPresent()) {
+            throw new UsernameAlreadyExistsException(createUserDto.getUsername());
         }
 
         // Verifica se CPF já existe
         if (createUserDto.getCpf() != null && !createUserDto.getCpf().isBlank()) {
             if (userRepository.findByCpf(createUserDto.getCpf()).isPresent()) {
-                throw new IllegalArgumentException("CPF já está em uso");
+                throw new CpfAlreadyExistsException();
+
             }
         }
 
@@ -76,11 +83,11 @@ public class AuthService {
     public AuthResponseDto login(LoginDto loginDto) {
         // Busca usuário por email
         UserModel user = userRepository.findByEmail(loginDto.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("Email ou senha inválidos"));
+                .orElseThrow(InvalidCredentialsException::new);
 
         // Valida senha com BCrypt
         if (!passwordEncoder.matches(loginDto.getPassword(), user.getPasswordHash())) {
-            throw new IllegalArgumentException("Email ou senha inválidos");
+            throw new InvalidCredentialsException();
         }
 
         // Gera JWT
@@ -148,7 +155,7 @@ public class AuthService {
                         refreshTokenDto.getRefreshToken(), 
                         token.getTokenHash()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Refresh token inválido ou expirado"));
+                .orElseThrow(InvalidRefreshTokenException::new);
 
         UserModel user = refreshTokenModel.getUser();
 

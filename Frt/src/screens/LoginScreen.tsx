@@ -69,6 +69,8 @@ export const LoginScreen: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  
   return (
     <KeyboardAvoidingView
       style={styles.container}

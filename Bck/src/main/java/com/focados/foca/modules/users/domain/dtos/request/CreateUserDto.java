@@ -22,7 +22,8 @@ public class CreateUserDto {
     @Size(min = 3, max = 200)
     private String name;
 
-    @NotBlank @NotNull @Size(min = 3, max = 30)
+    @NotBlank(message = "Username must not be empty or null...")
+    @Size(min = 3, max = 30, message = "Username must be between 3 and 30 characters")
     private String username;
 
     @Email

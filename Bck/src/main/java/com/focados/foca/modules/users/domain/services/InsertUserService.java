@@ -5,6 +5,8 @@ import com.focados.foca.modules.users.database.repository.UserRepository;
 import com.focados.foca.modules.users.domain.dtos.request.CreateUserDto;
 import com.focados.foca.modules.users.domain.dtos.response.CreateUserResponseDto;
 import com.focados.foca.modules.users.domain.dtos.mappers.UserMapper;
+import com.focados.foca.shared.common.utils.exceptions.EmailAlreadyUsedException;
+import com.focados.foca.shared.common.utils.exceptions.UsernameAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,12 +20,12 @@ public class InsertUserService {
     public CreateUserResponseDto execute(CreateUserDto dto) {
         // Verifica se email já existe
         if (repository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email já está em uso");
+            throw new EmailAlreadyUsedException(dto.getEmail());
         }
 
         // Verifica se username já existe
         if (repository.findByUsername(dto.getUsername()).isPresent()) {
-            throw new IllegalArgumentException("Username já está em uso");
+            throw new UsernameAlreadyExistsException(dto.getUsername());
         }
 
         // Mapeia DTO para entidade
