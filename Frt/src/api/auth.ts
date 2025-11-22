@@ -10,8 +10,7 @@ export interface RegisterRequest {
   password: string;
   name: string;
   username: string;
-  cpf?: string;
-  phone?: string;
+  cpf?: string; // Temporário até backend tornar opcional
 }
 
 export interface AuthResponse {

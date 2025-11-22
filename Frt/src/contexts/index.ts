@@ -1,2 +1,2 @@
-// Context exports will go here
+export { AuthProvider, useAuth } from './AuthContext';
 

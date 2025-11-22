@@ -1,5 +1,6 @@
 // API configuration and client setup
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Para web, pode ser necessário usar 127.0.0.1 ao invés de localhost
 // ou configurar CORS no backend
@@ -50,6 +51,17 @@ apiClient.interceptors.response.use(
       data: error.response?.data,
       url: error.config?.url,
     });
+    
+    // Se erro 401, fazer logout
+    if (error.response?.status === 401) {
+      // Token inválido - limpar autenticação
+      AsyncStorage.multiRemove([
+        '@focaplus:accessToken',
+        '@focaplus:refreshToken',
+        '@focaplus:user',
+      ]);
+    }
+    
     return Promise.reject(error);
   }
 );

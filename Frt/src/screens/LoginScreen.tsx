@@ -5,15 +5,20 @@ import { InputText } from '../components/InputText';
 import { Button } from '../components/Button';
 import { theme } from '../theme';
 import { authApi, LoginRequest } from '../api/auth';
+import { useAuth } from '../contexts/AuthContext';
 
 interface LoginFormData {
   email: string;
   password: string;
 }
 
-export const LoginScreen: React.FC = () => {
+export const LoginScreen: React.FC<{ onNavigateToRegister?: () => void; onLoginSuccess?: () => void }> = ({ 
+  onNavigateToRegister,
+  onLoginSuccess 
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const { login } = useAuth();
 
   const {
     control,
@@ -41,7 +46,14 @@ export const LoginScreen: React.FC = () => {
       console.log('📤 Sending login request:', loginData);
       const response = await authApi.login(loginData);
       console.log('✅ Login successful:', response);
-      // TODO: Salvar tokens e redirecionar
+      
+      // Salvar tokens e dados do usuário
+      await login(response);
+      
+      // Redirecionar para Home
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      }
     } catch (error: any) {
       console.error('❌ Login error details:', {
         message: error.message,
@@ -166,7 +178,7 @@ export const LoginScreen: React.FC = () => {
 
           <Button
             title="Cadastrar-se"
-            onPress={() => {}}
+            onPress={onNavigateToRegister || (() => {})}
             variant="white"
             style={styles.signupButton}
           />
