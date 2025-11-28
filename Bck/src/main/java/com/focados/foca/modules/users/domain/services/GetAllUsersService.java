@@ -8,9 +8,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * Serviço para listar todos os usuários
- */
 @Service
 @RequiredArgsConstructor
 public class GetAllUsersService {

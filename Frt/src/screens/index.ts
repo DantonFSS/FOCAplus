@@ -6,4 +6,7 @@ export { CreateGroupScreen } from './CreateGroupScreen';
 export { NewCourseScreen } from './NewCourseScreen';
 export { SelectPeriodScreen } from './SelectPeriodScreen';
 export { PeriodDetailScreen } from './PeriodDetailScreen';
+export { PeriodInfoScreen } from './PeriodInfoScreen';
+export { AddDisciplinesScreen } from './AddDisciplinesScreen';
+export { CourseInfoScreen } from './CourseInfoScreen';
 

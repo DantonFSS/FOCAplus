@@ -8,6 +8,7 @@ export const SelectPeriodScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const courseData = (route.params as any)?.courseData;
+  const createdCourse = (route.params as any)?.createdCourse;
 
   const periods = [1, 2, 3, 4, 5, 6];
   const [selectedPeriod, setSelectedPeriod] = React.useState<number | null>(null);
@@ -15,11 +16,11 @@ export const SelectPeriodScreen: React.FC = () => {
   const handleFinalize = () => {
     if (selectedPeriod) {
       console.log('Selected period:', selectedPeriod);
-      // TODO: Criar curso e período no backend
       // Navegar para detalhe do período
       (navigation as any).navigate('PeriodDetail', { 
         periodNumber: selectedPeriod,
-        courseData 
+        courseData,
+        createdCourse, // Passar o curso criado
       });
     }
   };

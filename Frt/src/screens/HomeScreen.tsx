@@ -50,7 +50,7 @@ export const HomeScreen: React.FC = () => {
       <View style={styles.optionsContainer}>
         <TouchableOpacity 
           style={styles.optionCard}
-          onPress={() => (navigation as any).navigate('NewCourse')}
+          onPress={() => (navigation as any).navigate('CourseCreation', { screen: 'NewCourse' })}
         >
           <View style={styles.optionIcon}>
             <Image 
@@ -72,7 +72,7 @@ export const HomeScreen: React.FC = () => {
 
         <TouchableOpacity 
           style={styles.optionCard}
-          onPress={() => (navigation as any).navigate('NewCourse')}
+          onPress={() => (navigation as any).navigate('CourseCreation', { screen: 'NewCourse' })}
         >
           <View style={styles.optionIcon}>
             <Image 
@@ -94,7 +94,7 @@ export const HomeScreen: React.FC = () => {
 
         <TouchableOpacity 
           style={styles.optionCard}
-          onPress={() => (navigation as any).navigate('NewCourse')}
+          onPress={() => (navigation as any).navigate('CourseCreation', { screen: 'NewCourse' })}
         >
           <View style={styles.optionIcon}>
             <Image 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useForm, Controller } from 'react-hook-form';
@@ -7,6 +7,7 @@ import { SelectDropdown } from '../components/SelectDropdown';
 import { DatePicker } from '../components/DatePicker';
 import { Button } from '../components/Button';
 import { theme } from '../theme';
+import { coursesApi, mapLevelToBackend, mapDivisionTypeToBackend } from '../api/courses';
 
 interface NewCourseFormData {
   courseName: string;
@@ -37,8 +38,23 @@ const DIVISION_QUANTITY_OPTIONS = Array.from({ length: 15 }, (_, i) => ({
   value: (i + 1).toString(),
 }));
 
+// Função para converter data de dd/mm/aaaa para yyyy-mm-dd (ISO)
+const convertDateToISO = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const parts = dateStr.split('/');
+  if (parts.length === 3) {
+    const day = parts[0].padStart(2, '0');
+    const month = parts[1].padStart(2, '0');
+    const year = parts[2];
+    return `${year}-${month}-${day}`;
+  }
+  return '';
+};
+
 export const NewCourseScreen: React.FC = () => {
   const navigation = useNavigation();
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const {
     control,
@@ -56,10 +72,53 @@ export const NewCourseScreen: React.FC = () => {
     },
   });
 
-  const onSubmit = (data: NewCourseFormData) => {
-    console.log('Course data:', data);
-    // TODO: Navegar para tela de seleção de período
-    (navigation as any).navigate('SelectPeriod', { courseData: data });
+  const onSubmit = async (data: NewCourseFormData) => {
+    setIsLoading(true);
+    setApiError(null);
+
+    try {
+      console.log('📝 Criando curso:', data);
+
+      // Converter dados do formulário para o formato do backend
+      const courseData = {
+        name: data.courseName.trim(),
+        level: mapLevelToBackend(data.level),
+        divisionType: mapDivisionTypeToBackend(data.divisionType),
+        divisionsCount: parseInt(data.divisionQuantity, 10),
+        institutionName: data.institutionName.trim(),
+        startDate: convertDateToISO(data.startDate),
+        endDate: convertDateToISO(data.endDate),
+      };
+
+      console.log('📤 Enviando para API:', courseData);
+      const createdCourse = await coursesApi.create(courseData);
+      console.log('✅ Curso criado com sucesso:', createdCourse);
+
+      // Navegar para tela de seleção de período com o curso criado
+      (navigation as any).navigate('SelectPeriod', { 
+        courseData: data,
+        createdCourse: createdCourse,
+      });
+    } catch (error: any) {
+      console.error('❌ Erro ao criar curso:', error);
+      
+      if (error.code === 'ECONNABORTED') {
+        setApiError('Tempo de requisição esgotado. Verifique sua conexão.');
+      } else if (error.code === 'ERR_NETWORK' || !error.response) {
+        setApiError('Não foi possível conectar ao servidor. Verifique se o backend está rodando.');
+      } else if (error.response?.status === 400) {
+        setApiError(error.response?.data?.message || 'Dados inválidos. Verifique os campos.');
+      } else if (error.response?.status === 401) {
+        setApiError('Sessão expirada. Por favor, faça login novamente.');
+      } else {
+        setApiError(
+          error.response?.data?.message || 
+          'Erro ao criar curso. Tente novamente.'
+        );
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -188,11 +247,19 @@ export const NewCourseScreen: React.FC = () => {
           )}
         />
 
+        {apiError && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{apiError}</Text>
+          </View>
+        )}
+
         <Button
           title="Avançar"
           onPress={handleSubmit(onSubmit)}
           variant="primary"
           style={styles.advanceButton}
+          loading={isLoading}
+          disabled={isLoading}
         />
 
         <Button
@@ -251,6 +318,16 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     marginBottom: theme.spacing.lg,
+  },
+  errorContainer: {
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.sm,
+  },
+  errorText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.redBad,
+    textAlign: 'center',
   },
 });
 

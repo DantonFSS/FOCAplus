@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -11,11 +12,15 @@ import { CreateGroupScreen } from './src/screens/CreateGroupScreen';
 import { NewCourseScreen } from './src/screens/NewCourseScreen';
 import { SelectPeriodScreen } from './src/screens/SelectPeriodScreen';
 import { PeriodDetailScreen } from './src/screens/PeriodDetailScreen';
+import { PeriodInfoScreen } from './src/screens/PeriodInfoScreen';
+import { AddDisciplinesScreen } from './src/screens/AddDisciplinesScreen';
+import { CourseInfoScreen } from './src/screens/CourseInfoScreen';
 import { DrawerContent } from './src/components/DrawerContent';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { theme } from './src/theme';
 
 const Drawer = createDrawerNavigator();
+const Stack = createNativeStackNavigator();
 
 function AuthNavigator() {
   const [currentScreen, setCurrentScreen] = useState<'login' | 'register'>('login');
@@ -35,6 +40,20 @@ function AuthNavigator() {
       )}
       <StatusBar style={currentScreen === 'login' ? 'light' : 'dark'} />
     </>
+  );
+}
+
+// Stack Navigator para o fluxo de criação de curso
+function CourseCreationStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="NewCourse" component={NewCourseScreen} />
+      <Stack.Screen name="SelectPeriod" component={SelectPeriodScreen} />
+      <Stack.Screen name="PeriodDetail" component={PeriodDetailScreen} />
+      <Stack.Screen name="PeriodInfo" component={PeriodInfoScreen} />
+      <Stack.Screen name="AddDisciplines" component={AddDisciplinesScreen} />
+      <Stack.Screen name="CourseInfo" component={CourseInfoScreen} />
+    </Stack.Navigator>
   );
 }
 
@@ -82,18 +101,8 @@ function AppNavigator() {
         <Drawer.Screen name="Pro" component={ProScreen} />
         <Drawer.Screen name="CreateGroup" component={CreateGroupScreen} />
         <Drawer.Screen 
-          name="NewCourse" 
-          component={NewCourseScreen}
-          options={{ headerShown: false }}
-        />
-        <Drawer.Screen 
-          name="SelectPeriod" 
-          component={SelectPeriodScreen}
-          options={{ headerShown: false }}
-        />
-        <Drawer.Screen 
-          name="PeriodDetail" 
-          component={PeriodDetailScreen}
+          name="CourseCreation" 
+          component={CourseCreationStack}
           options={{ headerShown: false }}
         />
       </Drawer.Navigator>
